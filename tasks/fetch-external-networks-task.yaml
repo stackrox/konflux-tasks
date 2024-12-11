@@ -3,7 +3,6 @@ kind: Task
 metadata:
   name: fetch-external-networks
   namespace: rh-acs-tenant
-# TODO(ROX-22196): Refactor to a task bundle
 spec:
   description: Fetches external network definitions from StackRox artifacts to be baked into the image.
   params:

@@ -3,7 +3,6 @@ kind: Task
 metadata:
   name: retag-image
   namespace: rh-acs-tenant
-# TODO(ROX-22196): Refactor to a task bundle
 spec:
   description: |
     Copies input image to the desired repo with the desired tag.

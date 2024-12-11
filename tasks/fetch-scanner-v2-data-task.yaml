@@ -3,7 +3,6 @@ kind: Task
 metadata:
   name: fetch-scanner-v2-data
   namespace: rh-acs-tenant
-# TODO(ROX-22196): Make the task EC-compliant (e.g. move to a bundle)
 spec:
   description: Downloads blobs from definitions.stackrox.io GCloud bucket to be included in Scanner container builds.
   params:

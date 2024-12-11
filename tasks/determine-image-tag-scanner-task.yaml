@@ -3,7 +3,6 @@ kind: Task
 metadata:
   name: determine-image-tag-scanner
   namespace: rh-acs-tenant
-# TODO(ROX-23812): Refactor to a task bundle
 spec:
   description: Determines the tag for the output image using the StackRox convention from 'make tag' output.
   params:
