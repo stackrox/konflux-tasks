@@ -28,14 +28,12 @@ spec:
     value: '{{revision}}'
   - name: output-image
     value: quay.io/redhat-user-workloads/rh-acs-tenant/acs-konflux-tasks:rev-{{revision}}
-  - name: image-expires-after
-    value: '106w'
-  - name: dockerfile
-    value: Dockerfile
   - name: rebuild
     value: "true"
   - name: build-source-image
     value: "true"
+  - name: path-context
+    value: tasks
 
   workspaces:
   - name: git-auth
@@ -60,11 +58,6 @@ spec:
         to build image.
       name: path-context
       type: string
-    - default: Dockerfile
-      description: Path to the Dockerfile inside the context specified by parameter
-        path-context
-      name: dockerfile
-      type: string
     - default: "false"
       description: Force rebuild image
       name: rebuild
@@ -72,10 +65,6 @@ spec:
     - default: "false"
       description: Skip checks against built image
       name: skip-checks
-      type: string
-    - default: "false"
-      description: Execute the build with network isolation
-      name: hermetic
       type: string
     - default: ""
       description: Build dependencies to be prefetched by Cachi2
@@ -92,14 +81,6 @@ spec:
     - default: "false"
       description: Add built image into an OCI image index
       name: build-image-index
-      type: string
-    - default: [ ]
-      description: Array of --build-arg values ("arg=value" strings) for buildah
-      name: build-args
-      type: array
-    - default: ""
-      description: Path to a file with build arguments for buildah, see https://www.mankier.com/1/buildah-build#--build-arg-file
-      name: build-args-file
       type: string
     - default: "1d"
       description: This sets the expiration time for intermediate OCI artifacts produced and used during builds after which they can be garbage collected.
@@ -238,33 +219,16 @@ spec:
       params:
       - name: IMAGE
         value: $(params.output-image)
-      - name: DOCKERFILE
-        value: $(params.dockerfile)
       - name: CONTEXT
         value: $(params.path-context)
-      - name: HERMETIC
-        value: $(params.hermetic)
-      - name: PREFETCH_INPUT
-        value: $(params.prefetch-input)
-      - name: IMAGE_EXPIRES_AFTER
-        value: $(params.image-expires-after)
-      - name: COMMIT_SHA
-        value: $(tasks.clone-repository.results.commit)
-      - name: BUILD_ARGS
-        value:
-        - $(params.build-args[*])
-      - name: BUILD_ARGS_FILE
-        value: $(params.build-args-file)
       - name: SOURCE_ARTIFACT
         value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
-      - name: CACHI2_ARTIFACT
-        value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
       taskRef:
         params:
         - name: name
-          value: buildah-oci-ta
+          value: tkn-bundle-oci-ta
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-buildah-oci-ta:0.2@sha256:33cc4005cb06a865676d523fa92a0312466c688fc4c98993700e42f2034efc75
+          value: quay.io/konflux-ci/tekton-catalog/task-tkn-bundle-oci-ta:0.1@sha256:b4b457d18a01348bd3d7d19b0ce05754c739efb2eb44be602c3050ed99c31a21
         - name: kind
           value: task
         resolver: bundles
@@ -285,7 +249,7 @@ spec:
         value: $(params.build-image-index)
       - name: IMAGES
         value:
-        - $(tasks.build-container.results.IMAGE_URL)@$(tasks.build-container.results.IMAGE_DIGEST)
+        - $(tasks.build-container.results.IMAGE_REF)
       taskRef:
         params:
         - name: name
@@ -534,28 +498,6 @@ spec:
           value: apply-tags
         - name: bundle
           value: quay.io/konflux-ci/tekton-catalog/task-apply-tags:0.1@sha256:0767c115d4ba4854d106c9cdfabdc1f1298bc2742a3fea4fefbac4b9c5873d6e
-        - name: kind
-          value: task
-        resolver: bundles
-
-    - name: push-dockerfile
-      params:
-      - name: IMAGE
-        value: $(tasks.build-image-index.results.IMAGE_URL)
-      - name: IMAGE_DIGEST
-        value: $(tasks.build-image-index.results.IMAGE_DIGEST)
-      - name: DOCKERFILE
-        value: $(params.dockerfile)
-      - name: CONTEXT
-        value: $(params.path-context)
-      - name: SOURCE_ARTIFACT
-        value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
-      taskRef:
-        params:
-        - name: name
-          value: push-dockerfile-oci-ta
-        - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-push-dockerfile-oci-ta:0.1@sha256:08ef41d6a98608bd5f1de75d77f015f520911a278d1875e174b88b9d04db2441
         - name: kind
           value: task
         resolver: bundles
