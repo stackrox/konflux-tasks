@@ -1,8 +1,9 @@
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-  name: determine-image-tag-scanner
+  name: determine-image-tag
 spec:
+  # TODO(ROX-27384): this is a task for the Scanner and Collector repos, unify with the StackRox one.
   description: Determines the tag for the output image using the StackRox convention from 'make tag' output.
   params:
   - name: TAG_SUFFIX
@@ -38,7 +39,7 @@ spec:
       dnf -y upgrade --nobest
       dnf -y install git make
 
-      scripts/konflux/fail-build-if-git-is-dirty.sh
+      .konflux/scripts/fail-build-if-git-is-dirty.sh
 
       # First, try take git tag if it's a tagged commit.
       tag="$(git tag --points-at)"
