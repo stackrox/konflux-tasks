@@ -44,6 +44,12 @@ spec:
     secret:
       secretName: '{{ git_auth_secret }}'
 
+  timeouts:
+    tasks: 15m
+    # Reserve time for final tasks to run.
+    finally: 10m
+    pipeline: 25m
+
   pipelineSpec:
 
     params:
