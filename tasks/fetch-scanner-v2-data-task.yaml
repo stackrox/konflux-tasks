@@ -5,12 +5,12 @@ metadata:
 spec:
   description: Downloads blobs from definitions.stackrox.io GCloud bucket to be included in Scanner container builds.
   params:
-  - name: blobs-to-fetch
+  - name: BLOBS_TO_FETCH
     description: |
       List of scanner-data file names to fetch to include in the container build.
       An empty list is allowed which results in no-op.
     type: array
-  - name: target-dir
+  - name: TARGET_DIR
     description: Target directory relative to workspace where to save downloaded blobs.
     type: string
   - name: SOURCE_ARTIFACT
@@ -48,14 +48,14 @@ spec:
     # The only functioning way to pass array parameter that I found is through args array.
     # Array params have weird limitations, see https://github.com/tektoncd/pipeline/blob/main/docs/tasks.md#substituting-array-parameters
     # Attempts to pass this in other places result in webhook errors and pipeline not starting.
-    args: [ "$(params.blobs-to-fetch[*])" ]
+    args: [ "$(params.BLOBS_TO_FETCH[*])" ]
     workingDir: /var/workdir/source
     script: |
       #!/usr/bin/env bash
       set -euo pipefail
       dnf -y upgrade --nobest
       dnf -y install git
-      .konflux/scripts/fetch-scanner-data.sh "$(params.target-dir)" "$@"
+      .konflux/scripts/fetch-scanner-data.sh "$(params.TARGET_DIR)" "$@"
     # Blobs for tagged builds are built on GHA in https://github.com/stackrox/scanner.
     # If the task times out, look there to debug.
     timeout: 1h30m
