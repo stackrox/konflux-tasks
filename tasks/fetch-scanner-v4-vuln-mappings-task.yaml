@@ -2,7 +2,6 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: fetch-scanner-v4-vuln-mappings
-  namespace: rh-acs-tenant
 spec:
   description: Fetches vulnerability mappings for Scanner v4 from StackRox artifacts to be baked into the image.
   params:

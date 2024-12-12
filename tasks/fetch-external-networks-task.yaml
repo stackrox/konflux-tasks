@@ -2,7 +2,6 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: fetch-external-networks
-  namespace: rh-acs-tenant
 spec:
   description: Fetches external network definitions from StackRox artifacts to be baked into the image.
   params:

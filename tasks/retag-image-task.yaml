@@ -2,7 +2,6 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: retag-image
-  namespace: rh-acs-tenant
 spec:
   description: |
     Copies input image to the desired repo with the desired tag.

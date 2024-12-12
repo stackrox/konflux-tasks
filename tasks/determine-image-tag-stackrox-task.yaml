@@ -2,7 +2,6 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: determine-image-tag-stackrox
-  namespace: rh-acs-tenant
 spec:
   description: Determines the tag for the output image using the StackRox convention from 'make tag' output.
   params:

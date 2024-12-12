@@ -2,7 +2,6 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: wait-for-image
-  namespace: rh-acs-tenant
 spec:
   description: Waits until the specified image is found and returns its digest.
   params:
