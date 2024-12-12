@@ -5,6 +5,9 @@ metadata:
 spec:
   description: Fetches vulnerability mappings for Scanner v4 from StackRox artifacts to be baked into the image.
   params:
+  - name: TARGET_DIR
+    description: Target directory relative to workspace where to save downloaded files.
+    type: string
   - name: SOURCE_ARTIFACT
     description: The Trusted Artifact URI pointing to the application source code.
     type: string
@@ -36,7 +39,7 @@ spec:
   - name: fetch-vuln-mappings
     image: registry.access.redhat.com/ubi8-minimal:latest
     workingDir: /var/workdir/source
-    script: scanner/image/scanner/download-mappings.sh .konflux/scanner-data
+    script: scanner/image/scanner/download-mappings.sh "$(params.TARGET_DIR)"
   - name: create-trusted-artifact
     image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:81c4864dae6bb11595f657be887e205262e70086a05ed16ada827fd6391926ac
     args:

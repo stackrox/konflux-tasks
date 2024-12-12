@@ -5,6 +5,9 @@ metadata:
 spec:
   description: Fetches external network definitions from StackRox artifacts to be baked into the image.
   params:
+  - name: TARGET_DIR
+    description: Target directory relative to workspace where to save downloaded files.
+    type: string
   - name: SOURCE_ARTIFACT
     description: The Trusted Artifact URI pointing to the application source code.
     type: string
@@ -40,7 +43,7 @@ spec:
       #!/usr/bin/env bash
       set -euo pipefail
       microdnf -y install zip
-      image/rhel/fetch-stackrox-data.sh .konflux/stackrox-data
+      image/rhel/fetch-stackrox-data.sh "$(params.TARGET_DIR)"
   - name: create-trusted-artifact
     image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:81c4864dae6bb11595f657be887e205262e70086a05ed16ada827fd6391926ac
     args:
