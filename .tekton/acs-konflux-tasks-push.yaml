@@ -26,8 +26,12 @@ spec:
     value: '{{source_url}}'
   - name: revision
     value: '{{revision}}'
-  - name: output-image
-    value: quay.io/rhacs-eng/konflux-tasks:rev-{{revision}}
+  - name: output-image-repo
+    value: quay.io/rhacs-eng/konflux-tasks
+  - name: output-image-tag
+    value: rev-{{revision}}
+  - name: output-trust-data-repo
+    value: quay.io/rhacs-eng/konflux-tasks-trust
   - name: rebuild
     value: "true"
   - name: build-source-image
@@ -50,8 +54,14 @@ spec:
       description: Revision of the Source Repository
       name: revision
       type: string
-    - description: Fully Qualified Output Image
-      name: output-image
+    - description: Repository of the output image
+      name: output-image-repo
+      type: string
+    - description: Unique tag of the output image
+      name: output-image-tag
+      type: string
+    - description: Image repository where to update data about tasks trust
+      name: output-trust-data-repo
       type: string
     - default: .
       description: Path to the source code of an application's component from where
@@ -111,7 +121,7 @@ spec:
     - name: slack-notification
       params:
       - name: message
-        value: ':x: `{{event_type}}` pipeline for <https://console.redhat.com/application-pipeline/workspaces/rh-acs/applications/acs/pipelineruns/$(context.pipelineRun.name)|$(context.pipelineRun.name)> (`$(params.output-image)`, revision <$(params.git-url)/commit/$(params.revision)|$(params.revision)>) has failed.'
+        value: ':x: `{{event_type}}` pipeline for <https://console.redhat.com/application-pipeline/workspaces/rh-acs/applications/acs/pipelineruns/$(context.pipelineRun.name)|$(context.pipelineRun.name)> (`$(params.output-image-repo)`, revision <$(params.git-url)/commit/$(params.revision)|$(params.revision)>) has failed.'
       - name: key-name
         value: 'acs-konflux-notifications'
       when:
@@ -148,7 +158,7 @@ spec:
     - name: init
       params:
       - name: image-url
-        value: $(params.output-image)
+        value: $(params.output-image-repo):$(params.output-image-tag)
       - name: rebuild
         value: $(params.rebuild)
       - name: skip-checks
@@ -170,7 +180,7 @@ spec:
       - name: revision
         value: $(params.revision)
       - name: ociStorage
-        value: $(params.output-image).git
+        value: $(params.output-image-repo):$(params.output-image-tag).git
       - name: ociArtifactExpiresAfter
         value: $(params.oci-artifact-expires-after)
       taskRef:
@@ -197,7 +207,7 @@ spec:
       - name: SOURCE_ARTIFACT
         value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       - name: ociStorage
-        value: $(params.output-image).prefetch
+        value: $(params.output-image-repo):$(params.output-image-tag).prefetch
       - name: ociArtifactExpiresAfter
         value: $(params.oci-artifact-expires-after)
       taskRef:
@@ -218,7 +228,7 @@ spec:
     - name: build-container
       params:
       - name: IMAGE
-        value: $(params.output-image)
+        value: $(params.output-image-repo):$(params.output-image-tag)
       - name: CONTEXT
         value: $(params.path-context)
       - name: SOURCE_ARTIFACT
@@ -240,7 +250,7 @@ spec:
     - name: build-image-index
       params:
       - name: IMAGE
-        value: $(params.output-image)
+        value: $(params.output-image-repo):$(params.output-image-tag)
       - name: COMMIT_SHA
         value: $(tasks.clone-repository.results.commit)
       - name: IMAGE_EXPIRES_AFTER
@@ -516,3 +526,29 @@ spec:
       - input: $(params.skip-checks)
         operator: in
         values: [ "false" ]
+
+    - name: update-tasks-trust
+      description: Updates the image which allows to trust built tasks in EC.
+      params:
+      - name: TASKS_IMAGE
+        value: $(params.output-image-repo):$(tasks.get-floating-tag.results.FLOATING_TAG)@$(tasks.build-image-index.results.IMAGE_DIGEST)
+      - name: TRUST_IMAGE
+        value: $(params.output-trust-data-repo):$(tasks.get-floating-tag.results.FLOATING_TAG)
+      taskSpec:
+        params:
+        - name: TASKS_IMAGE
+          type: string
+        - name: TRUST_IMAGE
+          type: string
+        steps:
+        - name: update-tasks-trust
+          image: quay.io/konflux-ci/appstudio-utils:latest@sha256:5c77fe44dfd9615b1ba854e27e4ae2583146599eb4021ca8bd4662d2ba3ffa14
+          script: |
+            #!/usr/bin/env bash
+            set -euo pipefail
+
+            ec --debug track bundle --freshen \
+              --bundle "$(params.TASKS_IMAGE)" \
+              --input "oci:$(params.TRUST_IMAGE)" --replace
+
+            echo "Done"
