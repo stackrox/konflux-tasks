@@ -450,10 +450,43 @@ spec:
         operator: in
         values: [ "false" ]
 
+    - name: get-floating-tag
+      description: Determines a floating tag that should be applied to the resulting images.
+      taskSpec:
+        results:
+        - name: FLOATING_TAG
+          description: Floating tag to apply to the resulting images.
+        steps:
+        - name: get-floating-tag
+          image: registry.redhat.io/ubi9-micro:latest@sha256:111395a0b54d220c4ad821602a4a28807d6c4fb2feb19b43a6468a9d5f257463
+          env:
+          - name: EVENT_TYPE
+            value: '{{event_type}}'
+          - name: SOURCE_BRANCH
+            value: '{{source_branch}}'
+          - name: PULL_REQUEST_NUMBER
+            value: '{{pull_request_number}}'
+          script: |
+            #!/usr/bin/env bash
+            set -euo pipefail
+            
+            if [[ "${EVENT_TYPE}" == "pull_request" ]]; then
+              floating_tag="pr-${PULL_REQUEST_NUMBER}"
+            else
+              floating_tag="${SOURCE_BRANCH}"
+              if [[ "${floating_tag}" == "main" ]]; then
+                floating_tag="latest"
+              fi
+            fi
+            
+            echo -n "${floating_tag}" | tee "$(results.FLOATING_TAG.path)"
+
     - name: apply-tags
       params:
       - name: IMAGE
         value: $(tasks.build-image-index.results.IMAGE_URL)
+      - name: ADDITIONAL_TAGS
+        value: [ $(tasks.get-floating-tag.results.FLOATING_TAG) ]
       taskRef:
         params:
         - name: name
