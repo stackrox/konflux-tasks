@@ -27,7 +27,7 @@ spec:
   - name: revision
     value: '{{revision}}'
   - name: output-image
-    value: quay.io/redhat-user-workloads/rh-acs-tenant/acs-konflux-tasks:rev-{{revision}}
+    value: quay.io/rhacs-eng/konflux-tasks:rev-{{revision}}
   - name: rebuild
     value: "true"
   - name: build-source-image
