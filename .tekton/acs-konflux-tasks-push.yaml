@@ -116,6 +116,9 @@ spec:
     - description: ""
       name: CHAINS-GIT_COMMIT
       value: $(tasks.clone-repository.results.commit)
+    - description: "Bundle reference you should use in the pipelines"
+      name: BUNDLE_REF
+      value: $(tasks.update-tasks-trust.results.BUNDLE_REF)
 
     workspaces:
     - name: git-auth
@@ -536,16 +539,18 @@ spec:
     - name: update-tasks-trust
       description: Updates the image which allows to trust built tasks in EC.
       params:
-      - name: TASKS_IMAGE
+      - name: BUNDLE_REF
         value: $(params.output-image-repo):$(tasks.get-floating-tag.results.FLOATING_TAG)@$(tasks.build-image-index.results.IMAGE_DIGEST)
       - name: TRUST_IMAGE
         value: $(params.output-trust-data-repo):$(tasks.get-floating-tag.results.FLOATING_TAG)
       taskSpec:
         params:
-        - name: TASKS_IMAGE
+        - name: BUNDLE_REF
           type: string
         - name: TRUST_IMAGE
           type: string
+        results:
+        - name: BUNDLE_REF
         steps:
         - name: update-tasks-trust
           image: quay.io/konflux-ci/appstudio-utils:latest@sha256:5c77fe44dfd9615b1ba854e27e4ae2583146599eb4021ca8bd4662d2ba3ffa14
@@ -554,7 +559,12 @@ spec:
             set -euo pipefail
 
             ec --debug track bundle --freshen \
-              --bundle "$(params.TASKS_IMAGE)" \
+              --bundle "$(params.BUNDLE_REF)" \
               --input "oci:$(params.TRUST_IMAGE)" --replace
 
             echo "Done"
+
+            # We pass through the input bundle reference to the task's output to later return it as one of the pipeline
+            # results. That's because Tekton errors out if we try to pass input parameters ($(params.output-image-repo)
+            # in this case) to the pipeline output results. ¯\_(ツ)_/¯
+            echo -n "$(params.BUNDLE_REF)" | tee "$(results.BUNDLE_REF.path)"
