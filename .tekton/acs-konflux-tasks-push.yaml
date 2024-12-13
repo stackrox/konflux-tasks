@@ -86,17 +86,9 @@ spec:
       description: Build dependencies to be prefetched by Cachi2
       name: prefetch-input
       type: string
-    - default: ""
-      description: Image tag expiration time, time values could be something like
-        1h, 2d, 3w for hours, days, and weeks, respectively.
-      name: image-expires-after
     - default: "false"
       description: Build a source image.
       name: build-source-image
-      type: string
-    - default: "false"
-      description: Add built image into an OCI image index
-      name: build-image-index
       type: string
     - default: "1d"
       description: This sets the expiration time for intermediate OCI artifacts produced and used during builds after which they can be garbage collected.
@@ -106,10 +98,10 @@ spec:
     results:
     - description: ""
       name: IMAGE_URL
-      value: $(tasks.build-image-index.results.IMAGE_URL)
+      value: $(tasks.build-container.results.IMAGE_URL)
     - description: ""
       name: IMAGE_DIGEST
-      value: $(tasks.build-image-index.results.IMAGE_DIGEST)
+      value: $(tasks.build-container.results.IMAGE_DIGEST)
     - description: ""
       name: CHAINS-GIT_URL
       value: $(tasks.clone-repository.results.url)
@@ -154,7 +146,7 @@ spec:
     - name: show-sbom
       params:
       - name: IMAGE_URL
-        value: $(tasks.build-image-index.results.IMAGE_URL)
+        value: $(tasks.build-container.results.IMAGE_URL)
       taskRef:
         params:
         - name: name
@@ -259,37 +251,10 @@ spec:
         operator: in
         values: [ "true" ]
 
-    - name: build-image-index
-      params:
-      - name: IMAGE
-        value: $(params.output-image-repo):$(params.output-image-tag)
-      - name: COMMIT_SHA
-        value: $(tasks.clone-repository.results.commit)
-      - name: IMAGE_EXPIRES_AFTER
-        value: $(params.image-expires-after)
-      - name: ALWAYS_BUILD_INDEX
-        value: $(params.build-image-index)
-      - name: IMAGES
-        value:
-        - $(tasks.build-container.results.IMAGE_REF)
-      taskRef:
-        params:
-        - name: name
-          value: build-image-index
-        - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-build-image-index:0.1@sha256:37328a4b2fc686435531ba423c26c2051822a4e70b06088c4d8eaf0e8fa6d65b
-        - name: kind
-          value: task
-        resolver: bundles
-      when:
-      - input: $(tasks.init.results.build)
-        operator: in
-        values: [ "true" ]
-
     - name: build-source-image
       params:
       - name: BINARY_IMAGE
-        value: $(tasks.build-image-index.results.IMAGE_URL)
+        value: $(tasks.build-container.results.IMAGE_URL)
       - name: SOURCE_ARTIFACT
         value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
       - name: CACHI2_ARTIFACT
@@ -314,9 +279,9 @@ spec:
     - name: clair-scan
       params:
       - name: image-digest
-        value: $(tasks.build-image-index.results.IMAGE_DIGEST)
+        value: $(tasks.build-container.results.IMAGE_DIGEST)
       - name: image-url
-        value: $(tasks.build-image-index.results.IMAGE_URL)
+        value: $(tasks.build-container.results.IMAGE_URL)
       taskRef:
         params:
         - name: name
@@ -334,9 +299,9 @@ spec:
     - name: sast-snyk-check
       params:
       - name: image-digest
-        value: $(tasks.build-image-index.results.IMAGE_DIGEST)
+        value: $(tasks.build-container.results.IMAGE_DIGEST)
       - name: image-url
-        value: $(tasks.build-image-index.results.IMAGE_URL)
+        value: $(tasks.build-container.results.IMAGE_URL)
       - name: SOURCE_ARTIFACT
         value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
       - name: CACHI2_ARTIFACT
@@ -358,9 +323,9 @@ spec:
     - name: clamav-scan
       params:
       - name: image-digest
-        value: $(tasks.build-image-index.results.IMAGE_DIGEST)
+        value: $(tasks.build-container.results.IMAGE_DIGEST)
       - name: image-url
-        value: $(tasks.build-image-index.results.IMAGE_URL)
+        value: $(tasks.build-container.results.IMAGE_URL)
       taskRef:
         params:
         - name: name
@@ -378,9 +343,9 @@ spec:
     - name: sast-coverity-check
       params:
       - name: image-digest
-        value: $(tasks.build-image-index.results.IMAGE_DIGEST)
+        value: $(tasks.build-container.results.IMAGE_DIGEST)
       - name: image-url
-        value: $(tasks.build-image-index.results.IMAGE_URL)
+        value: $(tasks.build-container.results.IMAGE_URL)
       - name: SOURCE_ARTIFACT
         value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
       - name: CACHI2_ARTIFACT
@@ -405,9 +370,9 @@ spec:
     - name: coverity-availability-check
       params:
       - name: image-digest
-        value: $(tasks.build-image-index.results.IMAGE_DIGEST)
+        value: $(tasks.build-container.results.IMAGE_DIGEST)
       - name: image-url
-        value: $(tasks.build-image-index.results.IMAGE_URL)
+        value: $(tasks.build-container.results.IMAGE_URL)
       - name: SOURCE_ARTIFACT
         value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
       - name: CACHI2_ARTIFACT
@@ -429,9 +394,9 @@ spec:
     - name: sast-shell-check
       params:
       - name: image-digest
-        value: $(tasks.build-image-index.results.IMAGE_DIGEST)
+        value: $(tasks.build-container.results.IMAGE_DIGEST)
       - name: image-url
-        value: $(tasks.build-image-index.results.IMAGE_URL)
+        value: $(tasks.build-container.results.IMAGE_URL)
       - name: SOURCE_ARTIFACT
         value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
       - name: CACHI2_ARTIFACT
@@ -453,7 +418,7 @@ spec:
     - name: sast-unicode-check
       params:
       - name: image-url
-        value: $(tasks.build-image-index.results.IMAGE_URL)
+        value: $(tasks.build-container.results.IMAGE_URL)
       - name: SOURCE_ARTIFACT
         value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
       - name: CACHI2_ARTIFACT
@@ -506,7 +471,7 @@ spec:
     - name: apply-tags
       params:
       - name: IMAGE
-        value: $(tasks.build-image-index.results.IMAGE_URL)
+        value: $(tasks.build-container.results.IMAGE_URL)
       - name: ADDITIONAL_TAGS
         value: [ $(tasks.get-floating-tag.results.FLOATING_TAG) ]
       taskRef:
@@ -522,9 +487,9 @@ spec:
     - name: rpms-signature-scan
       params:
       - name: image-url
-        value: $(tasks.build-image-index.results.IMAGE_URL)
+        value: $(tasks.build-container.results.IMAGE_URL)
       - name: image-digest
-        value: $(tasks.build-image-index.results.IMAGE_DIGEST)
+        value: $(tasks.build-container.results.IMAGE_DIGEST)
       taskRef:
         params:
         - name: name
@@ -543,7 +508,7 @@ spec:
       description: Prints info about the built tasks bundle.
       params:
       - name: BUNDLE_REF
-        value: $(params.output-image-repo):$(tasks.get-floating-tag.results.FLOATING_TAG)@$(tasks.build-image-index.results.IMAGE_DIGEST)
+        value: $(params.output-image-repo):$(tasks.get-floating-tag.results.FLOATING_TAG)@$(tasks.build-container.results.IMAGE_DIGEST)
       taskSpec:
         params:
         - name: BUNDLE_REF
