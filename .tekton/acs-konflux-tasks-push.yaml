@@ -116,9 +116,12 @@ spec:
     - description: ""
       name: CHAINS-GIT_COMMIT
       value: $(tasks.clone-repository.results.commit)
-    - description: "Bundle reference you should use in the pipelines"
+    - description: Bundle reference you should use in the pipelines
       name: BUNDLE_REF
-      value: $(tasks.update-tasks-trust.results.BUNDLE_REF)
+      value: $(tasks.get-bundle-info.results.BUNDLE_REF)
+    - description: Bundle contents
+      name: BUNDLE_CONTENTS
+      value: $(tasks.get-bundle-info.results.BUNDLE_CONTENTS)
 
     workspaces:
     - name: git-auth
@@ -536,11 +539,41 @@ spec:
         operator: in
         values: [ "false" ]
 
+    - name: get-bundle-info
+      description: Prints info about the built tasks bundle.
+      params:
+      - name: BUNDLE_REF
+        value: $(params.output-image-repo):$(tasks.get-floating-tag.results.FLOATING_TAG)@$(tasks.build-image-index.results.IMAGE_DIGEST)
+      taskSpec:
+        params:
+        - name: BUNDLE_REF
+          type: string
+        results:
+        - name: BUNDLE_REF
+        - name: BUNDLE_CONTENTS
+        steps:
+        - name: get-bundle-info
+          image: quay.io/konflux-ci/appstudio-utils:latest@sha256:5c77fe44dfd9615b1ba854e27e4ae2583146599eb4021ca8bd4662d2ba3ffa14
+          script: |
+            #!/usr/bin/env bash
+            set -euo pipefail
+
+            echo "Bundle reference:"
+            # We pass through the input bundle reference to the task's output to later return it as one of the pipeline
+            # results. That's because Tekton errors out if we try to pass input parameters ($(params.output-image-repo)
+            # in this case) to the pipeline output results. ¯\_(ツ)_/¯
+            echo -n "$(params.BUNDLE_REF)" | tee "$(results.BUNDLE_REF.path)"
+
+            echo
+            echo
+            echo "Bundle contents:"
+            tkn bundle list "$(params.BUNDLE_REF)" | tee "$(results.BUNDLE_CONTENTS.path)"
+
     - name: update-tasks-trust
       description: Updates the image which allows to trust built tasks in EC.
       params:
       - name: BUNDLE_REF
-        value: $(params.output-image-repo):$(tasks.get-floating-tag.results.FLOATING_TAG)@$(tasks.build-image-index.results.IMAGE_DIGEST)
+        value: $(tasks.get-bundle-info.results.BUNDLE_REF)
       - name: TRUST_IMAGE
         value: $(params.output-trust-data-repo):$(tasks.get-floating-tag.results.FLOATING_TAG)
       taskSpec:
@@ -549,8 +582,6 @@ spec:
           type: string
         - name: TRUST_IMAGE
           type: string
-        results:
-        - name: BUNDLE_REF
         steps:
         - name: update-tasks-trust
           image: quay.io/konflux-ci/appstudio-utils:latest@sha256:5c77fe44dfd9615b1ba854e27e4ae2583146599eb4021ca8bd4662d2ba3ffa14
@@ -563,8 +594,3 @@ spec:
               --input "oci:$(params.TRUST_IMAGE)" --replace
 
             echo "Done"
-
-            # We pass through the input bundle reference to the task's output to later return it as one of the pipeline
-            # results. That's because Tekton errors out if we try to pass input parameters ($(params.output-image-repo)
-            # in this case) to the pipeline output results. ¯\_(ツ)_/¯
-            echo -n "$(params.BUNDLE_REF)" | tee "$(results.BUNDLE_REF.path)"
