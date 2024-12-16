@@ -117,8 +117,6 @@ spec:
 
     workspaces:
     - name: git-auth
-    - name: netrc
-      optional: true
 
     finally:
 
@@ -226,8 +224,6 @@ spec:
       workspaces:
       - name: git-basic-auth
         workspace: git-auth
-      - name: netrc
-        workspace: netrc
 
     - name: build-container
       params:
