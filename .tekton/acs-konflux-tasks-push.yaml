@@ -558,8 +558,11 @@ spec:
             set -euo pipefail
 
             trust_image_tag="$(params.TRUST_IMAGE_TAG)"
+
             trust_image_repo="$(params.TRUST_IMAGE_REPO)"
             trust_image_repo_no_quay_io="${trust_image_repo#quay.io}"
+
+            trust_image_ref="${trust_image_repo}:${trust_image_tag}"
 
             trust_image_remote_tag_name="$( curl --silent --show-error --fail --location \
                 --get --data-urlencode "specificTag=${trust_image_tag}" \
@@ -586,13 +589,15 @@ spec:
             # that.
             #
             if [[ "${trust_image_remote_tag_name}" != "null" ]]; then
+              echo ">>> ${trust_image_ref} exists and will be updated"
               ec --debug track bundle --freshen \
                 --bundle "$(params.BUNDLE_REF)" \
-                --input "oci:${trust_image_repo}:${trust_image_tag}" --replace
+                --input "oci:${trust_image_ref}" --replace
             else
+              echo ">>> ${trust_image_ref} does not exist and will be pushed"
               ec --debug track bundle --freshen \
                 --bundle "$(params.BUNDLE_REF)" \
-                --output "oci:${trust_image_repo}:${trust_image_tag}"
+                --output "oci:${trust_image_ref}"
             fi
 
-            echo "Done"
+            echo ">>> Done"
