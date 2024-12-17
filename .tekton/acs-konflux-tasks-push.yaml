@@ -505,6 +505,9 @@ spec:
       params:
       - name: BUNDLE_REF
         value: $(params.output-image-repo):$(tasks.get-floating-tag.results.FLOATING_TAG)@$(tasks.build-container.results.IMAGE_DIGEST)
+      runAfter:
+      # Explicit dependency on `apply-tags` because the FLOATING_TAG is actually applied there.
+      - apply-tags
       taskSpec:
         params:
         - name: BUNDLE_REF
