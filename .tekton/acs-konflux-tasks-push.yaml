@@ -565,6 +565,7 @@ spec:
             trust_image_ref="${trust_image_repo}:${trust_image_tag}"
 
             trust_image_remote_tag_name="$( curl --silent --show-error --fail --location \
+                --retry 5 --retry-all-errors --max-time 60 \
                 --get --data-urlencode "specificTag=${trust_image_tag}" \
                 "https://quay.io/api/v1/repository/${trust_image_repo_no_quay_io}/tag/" | \
               jq -r ".tags[0].name" )"
