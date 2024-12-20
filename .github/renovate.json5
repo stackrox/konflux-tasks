@@ -37,6 +37,9 @@
       // TODO(ROX-27352): "after 3am and before 7am",
       "at any time",
     ],
+    "automerge": true,
+    "automergeType": "pr",
+    "automergeStrategy": "squash",
   },
   "enabledManagers": [
     "tekton",
