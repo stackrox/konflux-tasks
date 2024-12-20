@@ -81,11 +81,9 @@ spec:
       blobs=( "$@" )
 
       # Ensure that we download scanner data for a release if this is a tagged build.
-
-      # First, try take git tag if it's a tagged commit.
       tag="$(git tag --points-at)"
       if [[ -z "${tag}" ]]; then
-        # If not, use latest.
+        # If it's not a tagged commit, use latest.
         SCANNER_DATA_VERSION="latest"
         RETRY_TIMES=4
       elif [[ "$(wc -l <<< "${tag}")" -eq 1 ]]; then
