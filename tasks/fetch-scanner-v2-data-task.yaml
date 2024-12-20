@@ -59,9 +59,8 @@ spec:
     # Blobs for tagged builds are built on GHA in https://github.com/stackrox/scanner.
     # If the task times out, look there to debug.
     timeout: 1h30m
-    # The only functioning way to pass array parameter that I found is through args array.
-    # Array params have weird limitations, see https://github.com/tektoncd/pipeline/blob/main/docs/tasks.md#substituting-array-parameters
-    # Attempts to pass this in other places result in webhook errors and pipeline not starting.
+    # Array params can only be passed via args, see https://github.com/tektoncd/pipeline/blob/main/docs/tasks.md#substituting-array-parameters
+    # Attempts to pass that in other places resulted in webhook errors and pipeline not starting.
     args: [ "$(params.TARGET_DIR)", "$(params.BLOBS_TO_FETCH[*])" ]
     script: |
       #!/usr/bin/env bash
