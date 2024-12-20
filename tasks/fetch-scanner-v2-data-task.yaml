@@ -61,18 +61,12 @@ spec:
     # The only functioning way to pass array parameter that I found is through args array.
     # Array params have weird limitations, see https://github.com/tektoncd/pipeline/blob/main/docs/tasks.md#substituting-array-parameters
     # Attempts to pass this in other places result in webhook errors and pipeline not starting.
-    args: [ "$(params.BLOBS_TO_FETCH[*])" ]
+    args: [ "$(params.TARGET_DIR)", "$(params.BLOBS_TO_FETCH[*])" ]
     script: |
       #!/usr/bin/env bash
+
       set -euo pipefail
       dnf -y install git
-      .konflux/scripts/fetch-scanner-data.sh "$(params.TARGET_DIR)" "$@"
-
-      #!/usr/bin/env bash
-
-      # This script is for downloading Scanner/Scanner-DB blobs that should be included in the container image.
-
-      set -euo pipefail
 
       if [[ "$#" -lt "1" ]]; then
         >&2 echo "Error: please pass target directory and blob filename(s) as command line arguments."
