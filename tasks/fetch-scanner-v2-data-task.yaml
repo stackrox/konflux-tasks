@@ -89,6 +89,9 @@ spec:
         # If there is exactly one tag on the commit, use that.
         SCANNER_DATA_VERSION="${tag}"
         RETRY_TIMES=1000
+        echo "This is a tagged build. If any download times out, it is probably because the blobs were not published by the GitHub Workflow."
+        echo "The publishing usually takes about 1 hour after the tag is pushed."
+        echo "Go to https://github.com/stackrox/scanner/actions to debug."
       else
         >&2 echo -e "Error: the HEAD commit has multiple tags, don't know which one to choose:\n${tag}"
         exit 5
@@ -99,12 +102,7 @@ spec:
         url="https://storage.googleapis.com/definitions.stackrox.io/scanner-data/${SCANNER_DATA_VERSION}/${blob}"
         dest="${TARGET_DIR}/blob-${blob}"
 
-        echo """
-      Downloading ${url} > ${dest}, retrying ${RETRY_TIMES} times or until aborted by task timeout...
-      If the download times out for a tagged build, it is likely because the blobs were not published by the GitHub Workflow.
-      This usually takes about 1 hour after the tag is pushed.
-      Go to https://github.com/stackrox/scanner/actions to debug.
-        """
+        echo "Downloading ${url} > ${dest}, retrying ${RETRY_TIMES} times or until aborted by task timeout..."
         curl --fail --no-progress-bar --show-error --retry "${RETRY_TIMES}" --retry-delay 10 --retry-all-errors \
           --output "${dest}" \
           "${url}"
