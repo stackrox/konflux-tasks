@@ -53,7 +53,8 @@ spec:
     - $(params.SOURCE_ARTIFACT)=/var/workdir/source
 
   - name: fetch-scanner-data
-    image: registry.access.redhat.com/ubi9:latest@sha256:1057dab827c782abcfb9bda0c3900c0966b5066e671d54976a7bcb3a2d1a5e53
+    # We need git and toolbox image has it.
+    image: registry.access.redhat.com/ubi9/toolbox:latest@sha256:44447468aa6a3cab35747006f4a808af34ada185d8eca78f20cf016b73e80bf5
     workingDir: /var/workdir/source
     # Blobs for tagged builds are built on GHA in https://github.com/stackrox/scanner.
     # If the task times out, look there to debug.
@@ -66,7 +67,6 @@ spec:
       #!/usr/bin/env bash
 
       set -euo pipefail
-      dnf -y install git
 
       if [[ "$#" -lt "1" ]]; then
         >&2 echo "Error: please pass target directory and blob filename(s) as command line arguments."
