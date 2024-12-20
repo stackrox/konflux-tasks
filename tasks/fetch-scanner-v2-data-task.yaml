@@ -2,8 +2,12 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: fetch-scanner-v2-data
+
 spec:
-  description: Downloads blobs from definitions.stackrox.io GCloud bucket to be included in Scanner container builds.
+
+  description: Downloads blobs from definitions.stackrox.io GCloud bucket to be included in Scanner and Scanner-DB
+    container builds.
+
   params:
   - name: BLOBS_TO_FETCH
     description: |
@@ -14,50 +18,56 @@ spec:
     description: Target directory relative to workspace where to save downloaded blobs.
     type: string
   - name: SOURCE_ARTIFACT
-    description: The Trusted Artifact URI pointing to the artifact with
-      the application source code. This should be the result of the git-clone task,
-      results from other tasks might fail as dirty.
+    description: The Trusted Artifact URI pointing to the artifact with the application source code.
+      This should be the result of the git-clone task, an attempt to use results of prefetch-dependencies task may
+      cause errors later in the pipeline.
     type: string
   - name: ociStorage
     description: The OCI repository where the Trusted Artifacts are stored.
     type: string
   - name: ociArtifactExpiresAfter
-    description: Expiration date for the trusted artifacts created in the
-      OCI repository.
+    description: Expiration date for the trusted artifacts created in the OCI repository.
     type: string
+
   results:
   - name: SOURCE_ARTIFACT
-    description: The Trusted Artifact URI pointing to the artifact with the application source code
-      and additional smuggled activation key.
+    description: The Trusted Artifact URI pointing to the artifact with the application source code and additional
+      downloaded blobs.
     type: string
+
   volumes:
   - name: workdir
     emptyDir: { }
+
   stepTemplate:
     volumeMounts:
     - mountPath: /var/workdir
       name: workdir
+
   steps:
+
   - name: use-trusted-artifact
     image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:ff35e09ff5c89e54538b50abae241a765b2b7868f05d62c4835bebf0978f3659
     args:
     - use
     - $(params.SOURCE_ARTIFACT)=/var/workdir/source
+
   - name: fetch-scanner-data
     image: registry.access.redhat.com/ubi9:latest@sha256:1057dab827c782abcfb9bda0c3900c0966b5066e671d54976a7bcb3a2d1a5e53
+    workingDir: /var/workdir/source
+    # Blobs for tagged builds are built on GHA in https://github.com/stackrox/scanner.
+    # If the task times out, look there to debug.
+    timeout: 1h30m
     # The only functioning way to pass array parameter that I found is through args array.
     # Array params have weird limitations, see https://github.com/tektoncd/pipeline/blob/main/docs/tasks.md#substituting-array-parameters
     # Attempts to pass this in other places result in webhook errors and pipeline not starting.
     args: [ "$(params.BLOBS_TO_FETCH[*])" ]
-    workingDir: /var/workdir/source
     script: |
       #!/usr/bin/env bash
       set -euo pipefail
       dnf -y install git
       .konflux/scripts/fetch-scanner-data.sh "$(params.TARGET_DIR)" "$@"
-    # Blobs for tagged builds are built on GHA in https://github.com/stackrox/scanner.
-    # If the task times out, look there to debug.
-    timeout: 1h30m
+
   - name: create-trusted-artifact
     image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:ff35e09ff5c89e54538b50abae241a765b2b7868f05d62c4835bebf0978f3659
     args:
