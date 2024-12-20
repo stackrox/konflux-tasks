@@ -32,16 +32,7 @@
       "after 3am and before 7am",
     ],
   },
-  "dockerfile": {
-    "includePaths": [
-      // Instruct Renovate not try to update Dockerfiles other than konflux.Dockerfile (or konflux.anything.Dockerfile)
-      // to have less PR noise.
-      "**/*konflux*.Dockerfile",
-    ],
-  },
   "enabledManagers": [
-    // Restrict Renovate focus on Konflux things since we rely on GitHub's dependabot for everything else.
     "tekton",
-    "dockerfile",
   ],
 }
