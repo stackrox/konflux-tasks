@@ -442,7 +442,7 @@ spec:
           description: Floating tag to apply to the resulting images.
         steps:
         - name: get-floating-tag
-          image: registry.redhat.io/ubi9-micro:latest@sha256:111395a0b54d220c4ad821602a4a28807d6c4fb2feb19b43a6468a9d5f257463
+          image: registry.redhat.io/ubi9-micro:latest@sha256:becdf7fff4509ee81df982000d0adef858a7ae7995dfb7d774b9ded6a461ebad
           env:
           - name: EVENT_TYPE
             value: '{{event_type}}'
