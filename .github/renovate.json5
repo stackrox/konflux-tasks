@@ -39,6 +39,8 @@
       "at any time",
     ],
     "automerge": true,
+    // PRs can't be actually automerged because we require approval from CODEOWNERS which Renovate can't bypass,
+    // therefore we set automerge type to branch.
     "automergeType": "branch",
     "automergeStrategy": "squash",
   },
