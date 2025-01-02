@@ -54,7 +54,21 @@ spec:
 
       dnf -y install git make
 
-      .konflux/scripts/fail-build-if-git-is-dirty.sh
+      function fail_build_if_git_is_dirty() {
+        echo "Checking that there are no uncommitted changes in the git repo."
+        echo "If this command fails, you should see the list of modified files below."
+        echo "You need to find the reason and prevent it because otherwise the 'make tag' output will include '-dirty' which likely isn't what you want."
+        echo ""
+
+        if git status --porcelain | grep '.' >&2 ; then
+          >&2 echo "ERROR: Modified files found."
+          exit 2
+        else
+          echo "git repo looks clean."
+        fi
+      }
+
+      fail_build_if_git_is_dirty
 
       source_branch="$(params.SOURCE_BRANCH)"
 
