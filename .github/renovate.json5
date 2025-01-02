@@ -39,7 +39,7 @@
       "at any time",
     ],
     "automerge": true,
-    "automergeType": "pr",
+    "automergeType": "branch",
     "automergeStrategy": "squash",
   },
   "enabledManagers": [
