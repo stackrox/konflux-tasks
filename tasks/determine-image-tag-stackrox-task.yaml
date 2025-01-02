@@ -10,21 +10,28 @@ spec:
     description: Suffix to append to generated image tag.
     type: string
   - name: SOURCE_ARTIFACT
-    description: The Trusted Artifact URI pointing to the artifact with
-      the application source code. This should be the result of the git-clone task,
-      results from other tasks might fail as dirty.
+    description: The Trusted Artifact URI pointing to the artifact with the application source code. This should be the
+      result of the git-clone task, results from other tasks might fail as dirty.
     type: string
   - name: MAKEFILE_DIRECTORY
     description: Directory in which to run 'make' command.
     type: string
     default: "."
-  - name: MAKEFILE_TARGET
-    description: Makefile target to run.
+  - name: SOURCE_BRANCH
+    description: Branch or tag that triggered a build pipeline with this task.
+      Must be set to {{ source_branch }} Pipelines as Code variable.
+      See https://pipelinesascode.com/docs/guide/authoringprs/#dynamic-variables
     type: string
-    default: "tag"
+  - name: SUPPRESS_TAG_SUFFIX_ON_SOURCE_BRANCH_REGEX
+    description: Regular expression (must be understood by grep -E) which, when matches SOURCE_BRANCH param, prevents
+      TAG_SUFFIX to be appended to the resulting tag. Intended for Stable Stream builds where we want to produce image
+      tags without the "-fast" suffix.
+      By default is set to an expression that never matches anything, i.e. the suffix will always be applied.
+    type: string
+    default: ^\b$
   results:
   - name: IMAGE_TAG
-    description: Image Tag determined by custom logic.
+    description: Image Tag determined by the custom logic.
   volumes:
   - name: workdir
     emptyDir: { }
@@ -43,18 +50,28 @@ spec:
     workingDir: /var/workdir/source
     script: |
       #!/usr/bin/env bash
+
       set -euo pipefail
+
       dnf -y install git make
 
       .konflux/scripts/fail-build-if-git-is-dirty.sh
 
-      # Basic protection against running something arbitrary.
-      allowed_targets="tag|collector-tag|scanner-tag"
-      if [[ "|${allowed_targets}|" != *"|$(params.MAKEFILE_TARGET)|"* ]]; then
-        >&2 echo "Error: provided MAKEFILE_TARGET $(params.MAKEFILE_TARGET) is not one of the allowed targets ${allowed_targets}"
-        exit 2
+      source_branch="$(params.SOURCE_BRANCH)"
+
+      suffix="$(params.TAG_SUFFIX)"
+
+      if grep -qE '$(params.SUPPRESS_TAG_SUFFIX_ON_SOURCE_BRANCH_REGEX)' <<< "${source_branch}"; then
+        echo "Source branch ${source_branch} matches the suppression regex, the image tag suffix ${suffix} will be omitted."
+        suffix=""
       fi
 
-      image_tag="$(make -C "$(params.MAKEFILE_DIRECTORY)" --quiet --no-print-directory "$(params.MAKEFILE_TARGET)")$(params.TAG_SUFFIX)"
+      if [[ "${source_branch}" == refs/tags/* ]]; then
+        echo "${source_branch} seems to be a build of a git tag, will use this git tag."
+        image_tag="${source_branch#refs/tags/}"
+      else
+        # Otherwise, delegate the work to Makefiles.
+        image_tag="$(make -C "$(params.MAKEFILE_DIRECTORY)" --quiet --no-print-directory tag)"
+      fi
 
-      echo -n "$image_tag" | tee "$(results.IMAGE_TAG.path)"
+      echo -n "${image_tag}${suffix}" | tee "$(results.IMAGE_TAG.path)"
