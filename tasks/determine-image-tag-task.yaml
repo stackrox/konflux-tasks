@@ -17,17 +17,10 @@ spec:
     type: string
     default: "."
   - name: SOURCE_BRANCH
-    description: Branch or tag that triggered a build pipeline with this task.
+    description: Branch (or tag) that triggered a build pipeline with this task.
       Must be set to {{ source_branch }} Pipelines as Code variable.
       See https://pipelinesascode.com/docs/guide/authoringprs/#dynamic-variables
     type: string
-  - name: SUPPRESS_TAG_SUFFIX_ON_SOURCE_BRANCH_REGEX
-    description: Regular expression (must be understood by grep -E) which, when matches SOURCE_BRANCH param, prevents
-      TAG_SUFFIX to be appended to the resulting tag. Intended for Stable Stream builds where we want to produce image
-      tags without the "-fast" suffix.
-      By default is set to an expression that never matches anything, i.e. the suffix will always be applied.
-    type: string
-    default: ^\b$
   results:
   - name: IMAGE_TAG
     description: Image Tag determined by the custom logic.
@@ -71,13 +64,7 @@ spec:
       fail_build_if_git_is_dirty
 
       source_branch="$(params.SOURCE_BRANCH)"
-
       suffix="$(params.TAG_SUFFIX)"
-
-      if grep -qE '$(params.SUPPRESS_TAG_SUFFIX_ON_SOURCE_BRANCH_REGEX)' <<< "${source_branch}"; then
-        echo "Source branch ${source_branch} matches the suppression regex, the image tag suffix ${suffix} will be omitted."
-        suffix=""
-      fi
 
       if [[ "${source_branch}" == refs/tags/* ]]; then
         echo "${source_branch} seems to be a build of a git tag, will use this git tag."
