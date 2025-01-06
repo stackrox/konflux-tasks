@@ -2,13 +2,9 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: create-snapshot
-  namespace: rh-acs-tenant
 spec:
   description: Creates a snapshot based on the component names, image refs and Git information passed to the task.
   params:
-  - name: SOURCE_ARTIFACT
-    description: The Trusted Artifact URI pointing to the application source code.
-    type: string
   - name: COMPONENTS
     description: A stringified JSON array with information about components with name, container image ref, git repo and git revision for each.
     type: string
@@ -30,7 +26,7 @@ spec:
   - name: render-snapshot
     image: registry.access.redhat.com/ubi9:latest@sha256:1057dab827c782abcfb9bda0c3900c0966b5066e671d54976a7bcb3a2d1a5e53
     env:
-    - name: APPLICATION
+    - name: APPLICATION_NAME
       valueFrom:
         fieldRef:
           fieldPath: metadata.labels['appstudio.openshift.io/application']
@@ -61,8 +57,8 @@ spec:
           return json.loads(raw_input)
 
 
-      def determine_resource_version_suffix(application):
-          match = re.search(r"(?P<version>-\d+-\d+$)", application)
+      def determine_resource_version_suffix(application_name):
+          match = re.search(r"(?P<version>-\d+-\d+)$", application_name)
           if match:
               return match.group("version")
           return ""
@@ -71,7 +67,8 @@ spec:
       def determine_snapshot_name(prefix, product_version):
           # The timestamp is added to the Snapshot name so that we can differentiate Snapshots from rebuilds of the same commit or tag.
           timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-          return f"{prefix}{product_version}-{timestamp}".lower()
+          product_version_sanitized = product_version.replace(".", "-")
+          return f"{prefix}-{product_version_sanitized}-{timestamp}".lower()
 
 
       def process_component(component, resource_version_suffix):
@@ -101,7 +98,7 @@ spec:
           snapshot_name,
           pipeline_run_name,
           namespace,
-          application,
+          application_name,
           components
       ):
           return {
@@ -115,7 +112,7 @@ spec:
                   }
               },
               "spec": {
-                  "application": application,
+                  "application": application_name,
                   "components": components
               }
           }
@@ -128,28 +125,31 @@ spec:
               f.write(snapshot["metadata"]["name"])
 
 
-      if __name__ == '__main__':
-          application = os.environ["APPLICATION"]
+      def main():
+          application_name = os.environ["APPLICATION_NAME"]
           raw_components = parse_components_input(os.environ["COMPONENTS"])
           namespace = os.environ["NAMESPACE"]
           pipeline_run_name = os.environ["PIPELINE_RUN_NAME"]
           product_version = os.environ["PRODUCT_VERSION"]
           snapshot_name_result_path = os.environ["SNAPSHOT_NAME_RESULT_PATH"]
 
-          resource_version_suffix = determine_resource_version_suffix(application)
-          snapshot_name = determine_snapshot_name(application, resource_version_suffix)
+          snapshot_name = determine_snapshot_name(application_name, product_version)
+          resource_version_suffix = determine_resource_version_suffix(application_name)
           components = [process_component(c, resource_version_suffix) for c in raw_components]
 
           snapshot = construct_snapshot(
               snapshot_name=snapshot_name,
               pipeline_run_name=pipeline_run_name,
               namespace=namespace,
-              application=application,
+              application_name=application_name,
               components=components
           )
 
           write_snapshot(snapshot, snapshot_name_result_path)
           print("Rendered snapshot written to workspace.")
+
+      if __name__ == "__main__":
+          main()
 
   - name: create-snapshot
     image: registry.redhat.io/openshift4/ose-cli-rhel9@sha256:4f822262adc75bff1891bee0bab1611ae62dfb347f98fcf9aa2604129087eb2c

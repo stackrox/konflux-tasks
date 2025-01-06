@@ -9,12 +9,12 @@ spec:
     description: Image reference.
     type: string
   results:
+  - name: IMAGE_DIGEST
+    description: Image digest in the format `sha256:abcdef0123`.
   - name: GIT_REF
     description: Git commit for the image's source code from `vcs-ref` image label.
   - name: GIT_REPO
     description: Git repository URL for the image's source code from `source-location` image label.
-  - name: IMAGE_DIGEST
-    description: Image digest in the format `sha256:abcdef0123`.
   steps:
   - name: wait-for-image
     image: registry.access.redhat.com/ubi9/skopeo@sha256:cacf073d11823480382ca1c60770639dc477f85b7010cf78b374dadad1962de2
