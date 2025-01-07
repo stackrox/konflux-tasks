@@ -45,7 +45,19 @@ spec:
 
       set -euo pipefail
 
-      dnf -y install git make
+      function main() {
+        dnf -y install git make
+
+        fail_build_if_git_is_dirty
+
+        local suffix="$(params.TAG_SUFFIX)"
+        local source_branch="$(params.SOURCE_BRANCH)"
+
+        local image_tag
+        image_tag="$(determine_tag)"
+
+        echo -n "${image_tag}${suffix}" | tee "$(results.IMAGE_TAG.path)"
+      }
 
       function fail_build_if_git_is_dirty() {
         echo "Checking that there are no uncommitted changes in the git repo."
@@ -53,7 +65,7 @@ spec:
         echo "You need to find the reason and prevent it because otherwise the 'make tag' output will include '-dirty' which likely isn't what you want."
         echo ""
 
-        if git status --porcelain | grep '.' >&2 ; then
+        if git status --porcelain | grep "." >&2 ; then
           >&2 echo "ERROR: Modified files found."
           exit 2
         else
@@ -61,17 +73,55 @@ spec:
         fi
       }
 
-      fail_build_if_git_is_dirty
+      function determine_tag() {
+        function log() {
+          # Log to stderr so not to mess up function's printed result.
+          >&2 echo "$@"
+        }
 
-      source_branch="$(params.SOURCE_BRANCH)"
-      suffix="$(params.TAG_SUFFIX)"
+        # 1. Gather data
 
-      if [[ "${source_branch}" == refs/tags/* ]]; then
-        echo "${source_branch} seems to be a build of a git tag, will use this git tag."
-        image_tag="${source_branch#refs/tags/}"
-      else
-        # Otherwise, delegate the work to Makefiles.
-        image_tag="$(make -C "$(params.MAKEFILE_DIRECTORY)" --quiet --no-print-directory tag)"
-      fi
+        local tag_from_tekton=""
+        if [[ "${source_branch}" == refs/tags/* ]]; then
+          tag_from_tekton="${source_branch#refs/tags/}"
+        fi
+        log "Tag from Tekton event: '${tag_from_tekton}'"
 
-      echo -n "${image_tag}${suffix}" | tee "$(results.IMAGE_TAG.path)"
+        local tag_from_makefile
+        tag_from_makefile="$(make -C "$(params.MAKEFILE_DIRECTORY)" --quiet --no-print-directory tag)"
+        log "Tag reported by Makefile: '${tag_from_makefile}'"
+
+        local tags_from_git
+        tags_from_git="$(git tag --points-at)"
+        local -a tags_from_git_arr
+        readarray tags_from_git_arr <<< "${tags_from_git}"
+        log "Tags seen by git: '${tags_from_git_arr[*]}'"
+
+        local git_describe_output
+        git_describe_output="$(git describe --tags --abbrev=10 --dirty --long)"
+        log "Long git describe output: '${git_describe_output}'"
+
+        # 2. Decide
+
+        if [[ -n "${tag_from_tekton}" ]]; then
+          log "This seems to be a tekton tag push event, using ${tag_from_tekton} for the tag."
+          echo "${tag_from_tekton}"
+          return
+        fi
+
+        # Handle the special case in the Collector repo.
+        if printf '%s\0' "${tags_from_git_arr[@]}" | grep -qzFx -- "${tag_from_makefile}"; then
+          log "This is not a tag push event but Makefile reports literally the git tag ${tag_from_makefile}."
+          log "This happens when a build was triggered not by a tag push event but the commit is tagged and when the Makefile doesn't use '--long' with 'git describe'."
+          log "We should use a different image tag for this build in order to not mix results with a build that was triggered by a tag push event and which will tag its images as ${tag_from_makefile}."
+          log "Using ${git_describe_output} for the tag."
+          echo "${git_describe_output}"
+          return
+        fi
+
+        log "Using Makefile output ${tag_from_makefile} for the tag."
+        echo "${tag_from_makefile}"
+        return
+      }
+
+      main
