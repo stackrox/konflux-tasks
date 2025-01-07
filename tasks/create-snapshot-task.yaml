@@ -67,8 +67,8 @@ spec:
       def determine_snapshot_name(prefix, product_version):
           # The timestamp is added to the Snapshot name so that we can differentiate Snapshots from rebuilds of the same commit or tag.
           timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-          product_version_sanitized = product_version.replace(".", "-")
-          return f"{prefix}-{product_version_sanitized}-{timestamp}".lower()
+          product_version_sanitized = re.sub(r"[^a-zA-Z0-9-]", "-", product_version)
+          return f"{prefix}-{product_version_sanitized}-{timestamp}".lower()[:63]
 
 
       def process_component(component, resource_version_suffix):
