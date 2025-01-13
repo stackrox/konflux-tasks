@@ -459,8 +459,8 @@ spec:
             if [[ "${EVENT_TYPE}" == "pull_request" ]]; then
               floating_tag="pr-${PULL_REQUEST_NUMBER}"
             else
-              floating_tag="${SOURCE_BRANCH}"
-              if [[ "${floating_tag}" == "main" ]]; then
+              floating_tag="$(echo "${SOURCE_BRANCH}" | sed 's/[^a-zA-Z0-9_.]/-/g')"
+              if [[ "${SOURCE_BRANCH}" == "main" ]]; then
                 floating_tag="latest"
               fi
             fi
