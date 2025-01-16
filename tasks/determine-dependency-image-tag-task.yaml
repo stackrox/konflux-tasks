@@ -3,7 +3,7 @@ kind: Task
 metadata:
   name: determine-dependency-image-tag
 spec:
-  description: Determines the tag for the Scanner V2 or Collector images using 'make scanner-tag' or
+  description: Determines the original tags of Scanner V2 or Collector images using 'make scanner-tag' or
     'make collector-tag' output.
   params:
   - name: TAG_SUFFIX
@@ -55,9 +55,8 @@ spec:
         exit 2
       fi
 
-      # Note that even release Collector and Scanner V2 images will have the tag suffix. I.e. the suffix isn't planned
-      # to be suppressed there in the Konflux pipelines building for release at the time of this writing.
+      image_tag="$(make -C "$(params.MAKEFILE_DIRECTORY)" --quiet --no-print-directory "${makefile_target}")"
 
-      image_tag="$(make -C "$(params.MAKEFILE_DIRECTORY)" --quiet --no-print-directory "${makefile_target}")$(params.TAG_SUFFIX)"
-
-      echo -n "$image_tag" | tee "$(results.IMAGE_TAG.path)"
+      # Note that Collector and Scanner V2 images built with Konflux even for release will have the tag suffix. I.e. the
+      # suffix isn't planned to be suppressed there in release _builds_ at the time of this writing.
+      echo -n "${image_tag}$(params.TAG_SUFFIX)" | tee "$(results.IMAGE_TAG.path)"
