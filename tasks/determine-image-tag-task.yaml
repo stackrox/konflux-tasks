@@ -94,7 +94,7 @@ spec:
         local tags_from_git
         tags_from_git="$(git tag --points-at)"
         local -a tags_from_git_arr
-        readarray tags_from_git_arr <<< "${tags_from_git}"
+        readarray -t tags_from_git_arr <<< "${tags_from_git}"
         log "Tags seen by git: '${tags_from_git_arr[*]}'"
 
         local git_describe_output
@@ -111,9 +111,9 @@ spec:
 
         # Handle the special case in the Collector repo.
         if printf '%s\0' "${tags_from_git_arr[@]}" | grep -qzFx -- "${tag_from_makefile}"; then
-          log "This is not a tag push event but Makefile reports literally the git tag ${tag_from_makefile}."
+          log "This is not a tag push event but Makefile reports literally the git tag '${tag_from_makefile}'."
           log "This happens when a build was triggered not by a tag push event but the commit is tagged and when the Makefile doesn't use '--long' with 'git describe'."
-          log "We should use a different image tag for this build in order to not mix results with a build that was triggered by a tag push event and which will tag its images as ${tag_from_makefile}."
+          log "We should use a different image tag for this build in order to not mix results with a build that was triggered by the tag push event and which will indeed use `${tag_from_makefile}` as the tag for images built there."
           log "Using ${git_describe_output} for the tag."
           echo "${git_describe_output}"
           return
