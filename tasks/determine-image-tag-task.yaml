@@ -18,7 +18,7 @@ spec:
     default: "."
   - name: SOURCE_BRANCH
     description: Branch (or tag) that triggered a build pipeline with this task.
-      Must be set to {{ source_branch }} Pipelines as Code variable.
+      Must be set to '{{ source_branch }}' Pipelines as Code variable.
       See https://pipelinesascode.com/docs/guide/authoringprs/#dynamic-variables
     type: string
   results:
@@ -50,8 +50,8 @@ spec:
 
         fail_build_if_git_is_dirty
 
-        local suffix="$(params.TAG_SUFFIX)"
-        local source_branch="$(params.SOURCE_BRANCH)"
+        local -r suffix="$(params.TAG_SUFFIX)"
+        local -r source_branch="$(params.SOURCE_BRANCH)"
 
         local image_tag
         image_tag="$(determine_tag)"
@@ -75,7 +75,7 @@ spec:
 
       function determine_tag() {
         function log() {
-          # Log to stderr so not to mess up function's printed result.
+          # Log to stderr so not to mess up the function's printed result.
           >&2 echo "$@"
         }
 
