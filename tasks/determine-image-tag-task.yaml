@@ -113,7 +113,7 @@ spec:
         if printf '%s\0' "${tags_from_git_arr[@]}" | grep -qzFx -- "${tag_from_makefile}"; then
           log "This is not a tag push event but Makefile reports literally the git tag '${tag_from_makefile}'."
           log "This happens when a build was triggered not by a tag push event but the commit is tagged and when the Makefile doesn't use '--long' with 'git describe'."
-          log "We should use a different image tag for this build in order to not mix results with a build that was triggered by the tag push event and which will indeed use `${tag_from_makefile}` as the tag for images built there."
+          log "We should use a different image tag for this build in order to not mix results with a build that was triggered by the tag push event and which will indeed use '${tag_from_makefile}' as the tag for images built there."
           log "Using ${git_describe_output} for the tag."
           echo "${git_describe_output}"
           return
