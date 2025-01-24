@@ -108,7 +108,8 @@ spec:
                   "name": snapshot_name,
                   "namespace": namespace,
                   "labels": {
-                      "appstudio.openshift.io/build-pipelinerun": pipeline_run_name
+                      "appstudio.openshift.io/build-pipelinerun": pipeline_run_name,
+                      "appstudio.openshift.io/component": "operator-bundle"
                   }
               },
               "spec": {
