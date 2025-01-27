@@ -91,6 +91,16 @@ spec:
         tag_from_makefile="$(make -C "$(params.MAKEFILE_DIRECTORY)" --quiet --no-print-directory tag)"
         log "Tag reported by Makefile: '${tag_from_makefile}'"
 
+        # Fast stream tags/versions must be comparable according to SemVer and so versions like '4.7.x-anything' should
+        # be converted to '4.7.0-anything'.
+        local tag_from_makefile_sanitized
+        tag_from_makefile_sanitized="$(echo "${tag_from_makefile}" | sed -E 's@^(([[:digit:]]+\.)+)x(-)?@\10\3@g' )"
+        log "Tag from Makefile with '.x' sanitized: '${tag_from_makefile_sanitized}'"
+
+        local stackrox_repo
+        stackrox_repo="$(is_stackrox_repo)"
+        log "Is this StackRox repo: ${stackrox_repo}"
+
         local tags_from_git
         tags_from_git="$(git tag --points-at)"
         local -a tags_from_git_arr
@@ -119,9 +129,24 @@ spec:
           return
         fi
 
+        if [[ "${stackrox_repo}" == "yes" ]]; then
+          log "Using sanitized Makefile output ${tag_from_makefile_sanitized} for the tag."
+          echo "${tag_from_makefile_sanitized}"
+          return
+        fi
+
         log "Using Makefile output ${tag_from_makefile} for the tag."
         echo "${tag_from_makefile}"
         return
+      }
+
+      # A poor-man's way to differentiate stackrox/stackrox repo from stackrox/collector, stackrox/scanner and others.
+      function is_stackrox_repo() {
+        result="no"
+        if git remote -v | grep -qE '(\b)stackrox/stackrox(\b)'; then
+          result="yes"
+        fi
+        echo "${result}"
       }
 
       main
