@@ -108,7 +108,15 @@ spec:
                   "name": snapshot_name,
                   "namespace": namespace,
                   "labels": {
-                      "appstudio.openshift.io/build-pipelinerun": ""
+                      # We don't set the appstudio's default pipelinerun label's value to the PipelineRun name because
+                      # this inhibits the OOTB creation of a Snapshot in Konflux which in turn may have undesired
+                      # effects, e.g. the operator-bundle image not being promoted in the corresponding component.
+                      # We still add the label because otherwise our custom Snapshot will not load in UI.
+                      "appstudio.openshift.io/build-pipelinerun": "",
+
+                      # The following is a custom label and we add it to help ourselves find out which PipelineRun
+                      # created the Snapshot.
+                      "created-by-pipelinerun": pipeline_run_name
                   }
               },
               "spec": {
