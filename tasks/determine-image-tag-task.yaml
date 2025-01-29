@@ -91,7 +91,7 @@ spec:
         tag_from_makefile="$(make -C "$(params.MAKEFILE_DIRECTORY)" --quiet --no-print-directory tag)"
         log "Tag reported by Makefile: '${tag_from_makefile}'"
 
-        # Fast stream tags/versions must be comparable according to SemVer and so versions like '4.7.x-anything' should
+        # Fast Stream tags/versions must be comparable according to SemVer and so versions like '4.7.x-anything' should
         # be converted to '4.7.0-anything'.
         local tag_from_makefile_sanitized
         tag_from_makefile_sanitized="$(echo "${tag_from_makefile}" | sed -E 's@^(([[:digit:]]+\.)+)x(-)?@\10\3@g' )"
@@ -129,6 +129,12 @@ spec:
           return
         fi
 
+        # We sanitize StackRox tags for Fast Stream users so that versions are comparable according to SemVer.
+        # We must not sanitize tags for Collector and Scanner because these are internal, development tags (e.g.
+        # 3.20.x-80-g5afdaf059a and 2.35.x-57-ga9da3070bd) which are not exposed to users (and they must match the
+        # contents of COLLECTOR_VERSION and SCANNER_VERSION files); instead we add unified tags (same as on images built
+        # from StackRox repo, e.g. 4.7.0-551-g1ca8d0d66e-fast) to user-facing Collector and Scanner images (with
+        # retagging and/or release pipelines).
         if [[ "${stackrox_repo}" == "yes" ]]; then
           log "Using sanitized Makefile output ${tag_from_makefile_sanitized} for the tag."
           echo "${tag_from_makefile_sanitized}"
