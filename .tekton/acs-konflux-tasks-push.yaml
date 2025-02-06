@@ -341,10 +341,16 @@ spec:
 
     - name: sast-coverity-check
       params:
-      - name: image-digest
-        value: $(tasks.build-container.results.IMAGE_DIGEST)
       - name: image-url
         value: $(tasks.build-container.results.IMAGE_URL)
+      - name: IMAGE
+        value: $(tasks.build-container.results.IMAGE_URL)
+      - name: CONTEXT
+        value: $(params.path-context)
+      - name: PREFETCH_INPUT
+        value: $(params.prefetch-input)
+      - name: COMMIT_SHA
+        value: $(tasks.clone-repository.results.commit)
       - name: SOURCE_ARTIFACT
         value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
       - name: CACHI2_ARTIFACT
@@ -354,7 +360,7 @@ spec:
         - name: name
           value: sast-coverity-check-oci-ta
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-sast-coverity-check-oci-ta:0.2@sha256:3d1ae2cd5ea84c72f0aeafb8ad43f79aa34bc3d462c03458f928b892a8e4a410
+          value: quay.io/konflux-ci/tekton-catalog/task-sast-coverity-check-oci-ta:0.2@sha256:8e0e58ccae796157e9858c10420704de37f2f05e8897b1ffe1e6a7318ec7176b
         - name: kind
           value: task
         resolver: bundles
@@ -372,16 +378,12 @@ spec:
         value: $(tasks.build-container.results.IMAGE_DIGEST)
       - name: image-url
         value: $(tasks.build-container.results.IMAGE_URL)
-      - name: SOURCE_ARTIFACT
-        value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
-      - name: CACHI2_ARTIFACT
-        value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
       taskRef:
         params:
         - name: name
-          value: coverity-availability-check-oci-ta
+          value: coverity-availability-check
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-coverity-availability-check-oci-ta:0.2@sha256:8653d290298593e4db9457ab00d9160738c31c384b7615ee30626ccab6f96ed8
+          value: quay.io/konflux-ci/tekton-catalog/task-coverity-availability-check:0.2@sha256:91ba738df7ec548d4127163e07a88de06568a350fbf581405cc8fc8498f6153c
         - name: kind
           value: task
         resolver: bundles
@@ -444,7 +446,7 @@ spec:
           description: Floating tag to apply to the resulting images.
         steps:
         - name: get-floating-tag
-          image: registry.redhat.io/ubi9-minimal:latest@sha256:b87097994ed62fbf1de70bc75debe8dacf3ea6e00dd577d74503ef66452c59d6
+          image: registry.redhat.io/ubi9-minimal:latest@sha256:66b99214cb9733e77c4a12cc3e3cbbe76769a213f4e2767f170a4f0fdf9db490
           env:
           - name: EVENT_TYPE
             value: '{{event_type}}'
@@ -455,7 +457,7 @@ spec:
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
-            
+
             if [[ "${EVENT_TYPE}" == "pull_request" ]]; then
               floating_tag="pr-${PULL_REQUEST_NUMBER}"
             else
@@ -464,7 +466,7 @@ spec:
                 floating_tag="latest"
               fi
             fi
-            
+
             echo -n "${floating_tag}" | tee "$(results.FLOATING_TAG.path)"
 
     - name: apply-tags
@@ -520,7 +522,7 @@ spec:
         - name: BUNDLE_CONTENTS
         steps:
         - name: get-bundle-info
-          image: quay.io/konflux-ci/appstudio-utils:latest@sha256:4f6f30152c28833eaeb68484d9df2183eab5f7d9e7b26cbdb3bda90806e8b743
+          image: quay.io/konflux-ci/appstudio-utils:latest@sha256:fe39bcb6046c1b50b4837e98a3ffca7e3b68ebb56e0e8d44bf26c76aba762fde
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
@@ -555,7 +557,7 @@ spec:
           type: string
         steps:
         - name: update-tasks-trust
-          image: quay.io/konflux-ci/appstudio-utils:latest@sha256:4f6f30152c28833eaeb68484d9df2183eab5f7d9e7b26cbdb3bda90806e8b743
+          image: quay.io/konflux-ci/appstudio-utils:latest@sha256:fe39bcb6046c1b50b4837e98a3ffca7e3b68ebb56e0e8d44bf26c76aba762fde
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
