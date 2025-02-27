@@ -38,12 +38,9 @@ spec:
     type: string
     description: Whether to allow insecure connections to infra deployment.
     default: "false"
-  - name: infractl-bin
-    type: string
-    description: Path to the infractl binary
   results:
   - name: kubeconfig
-    description: Path to the kubeconfig of the created cluster
+    description: Kubeconfig of the created cluster
   volumes:
   - name: acs-infra-volume
     secret:
@@ -87,6 +84,16 @@ spec:
       
       export INFRA_TOKEN
       
+      download_infractl() {
+        curl --fail -sL https://infra.rox.systems/v1/cli/linux/amd64/upgrade \
+          | jq -r ".result.fileChunk" \
+          | base64 -d \
+        > infractl
+        chmod +x infractl
+        export INFRACTL=$(realpath ./infractl)
+        printf "INFO: $($INFRACTL --version)\n" 
+      }
+      
       infractl_call() {
         local endpoint_options=("--endpoint" "$ENDPOINT")
         if [ "$INSECURE" = "true" ]; then
@@ -127,6 +134,8 @@ spec:
           printf "ERROR: The cluster name must comply to the regular expression: \"${ALLOWED_NAMES}\"\n"
           exit 1
       fi
+      
+      download_infractl
       
       case $(cluster_status "$CNAME") in
       "")
@@ -190,7 +199,5 @@ spec:
           --lifespan "$LIFESPAN" \
           "${OPTIONS[@]}"
       
-      printf "INFO: Downloading kubeconfig...\n"
       url=$($INFRACTL artifacts "$NAME" --json | jq '.Artifacts[] | select(.Name=="kubeconfig") | .URL' -r)
-      curl -s $url -o "kubeconfig-$NAME"
-      realpath "kubeconfig-$NAME" > $(results.kubeconfig.path)
+      curl -s $url > $(results.kubeconfig.path)

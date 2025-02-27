@@ -28,8 +28,6 @@ spec:
     env:
     - name: CONFIG_FILE
       value: /usr/local/infra/cluster.json
-    - name: INFRACTL
-      value: "$(params.infractl-bin)"
     - name: CLUSTER_NAME
       value: "$(params.cluster-name)"
     script: |
@@ -37,7 +35,17 @@ spec:
 
       set -o errexit
       set -o nounset
-
+      
+      download_infractl() {
+        curl --fail -sL https://infra.rox.systems/v1/cli/linux/amd64/upgrade \
+          | jq -r ".result.fileChunk" \
+          | base64 -d \
+        > infractl
+        chmod +x infractl
+        export INFRACTL=$(realpath ./infractl)
+        printf "INFO: $($INFRACTL --version)\n" 
+      }
+      
       if [[ -z "${CLUSTER_NAME:-}"  ]]; then
           echo "INFO: No cluster needs to be destroyed."
           return
@@ -46,5 +54,7 @@ spec:
       INFRA_TOKEN=$(jq -r '.infraToken' $CONFIG_FILE)
       
       export INFRA_TOKEN
+      
+      download_infractl
       
       $INFRACTL delete "$(params.cluster-name)"
