@@ -8,7 +8,7 @@ spec:
   - name: infractl-bin
     description: Path to the infractl binary.
   steps:
-  - name: donwload-infractl
+  - name: download-infractl
     image: quay.io/konflux-qe-incubator/konflux-qe-tools:latest@sha256:88d70f9c61d2059e3a084fe6f2fb3ac341bc65efe9c6ba994e42a61bbb54fcba
     workingDir: /workspace/bin
     script: |
