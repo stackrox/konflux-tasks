@@ -1,0 +1,27 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: install-infractl
+spec:
+  description: Download infractl.
+  results:
+  - name: infractl-bin
+    description: Path to the infractl binary.
+  steps:
+  - name: donwload-infractl
+    image: registry.access.redhat.com/ubi9:latest@sha256:be214e191bbe3f4d0f16a5a4f5642e1f32fccd6fae7d2b6c6acb066ba51fb507
+    workingDir: /workspace/bin
+    script: |
+      #!/usr/bin/env bash
+
+      set -o errexit
+      set -o nounset
+      set -o pipefail
+      
+      curl --fail -sL https://infra.rox.systems/v1/cli/linux/amd64/upgrade \
+        | jq -r ".result.fileChunk" \
+        | base64 -d \
+      > infractl
+      chmod +x infractl
+      printf "INFO: $(./infractl --version)\n" 
+      echo "/workspace/bin/infractl" > $(results.infractl-bin.path)

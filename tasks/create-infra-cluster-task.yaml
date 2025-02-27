@@ -1,0 +1,188 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: create-infra-cluster
+spec:
+  description: Create a cluster on infra.
+  params:
+  - name: flavor
+    type: string
+    description: Flavor (`qa-demo`, `gke-default`, `openshift-4-demo`...).
+  - name: cluster-name
+    type: string
+    description: Cluster name ([a-z][a-z0-9-]{1,26}[a-z0-9])
+  - name: acs-infra-secret
+    type: string
+    description: The name of the secret containing credentials for infra access.
+  - name: lifespan
+    type: string
+    description: Cluster lifespan.
+  - name: args
+    type: string
+    description: Comma separated flavor arguments. Ex. nodes=5,main-image=main:tag.
+    default: ""
+  - name: wait
+    type: string
+    description: Whether to wait for the cluster readiness.
+    default: "false"
+  - name: no-slack
+    type: string
+    description: Whether to skip sending Slack messages for lifecycle events.
+    default: "false"
+  - name: endpoint
+    type: string
+    description: URL to infra deployment.
+    default: infra.rox.systems
+  - name: insecure
+    type: string
+    description: Whether to allow insecure connections to infra deployment.
+    default: "false"
+  - name: infractl-bin
+    type: string
+    description: Path to the infractl binary
+  volumes:
+  - name: acs-infra-volume
+    secret:
+      secretName: "$(params.acs-infra-secret)"
+  steps:
+  - name: provision
+    image: registry.access.redhat.com/ubi9:latest@sha256:be214e191bbe3f4d0f16a5a4f5642e1f32fccd6fae7d2b6c6acb066ba51fb507
+    volumeMounts:
+    - name: acs-infra-volume
+      mountPath: /usr/local/infra
+    env:
+    - name: FLAVOR
+      value: "$(params.flavor)"
+    - name: NAME
+      value: "$(params.cluster-name)"
+    - name: LIFESPAN
+      value: "$(params.lifespan)"
+    - name: WAIT
+      value: "$(params.wait)"
+    - name: ARGS
+      value: "$(params.args)"
+    - name: NO_SLACK
+      value: "$(params.no-slack)"
+    - name: ENDPOINT
+      value: "$(params.endpoint)"
+    - name: INSECURE
+      value: "$(params.insecure)"
+    - name: INFRACTL
+      value: "$(params.infractl-bin)"
+    - name: CONFIG_FILE
+      value: /usr/local/infra/cluster.json
+    script: |
+      #!/usr/bin/env bash
+      
+      set -o errexit
+      set -o nounset
+      set -o pipefail
+      
+      INFRA_TOKEN=$(jq -r '.infraToken' $CONFIG_FILE)
+      
+      export INFRA_TOKEN
+      
+      infractl_call() {
+        local endpoint_options=("--endpoint" "$ENDPOINT")
+        if [ "$INSECURE" = "true" ]; then
+          endpoint_options+=("--insecure")
+          printf "INFO: Using an insecure connection when connecting to infra endpoint $ENDPOINT.\n"
+        fi
+        $INFRACTL "${endpoint_options[@]}" "$@"
+      }
+      
+      cluster_info() {
+        infractl_call 2>/dev/null get "$1" --json 
+      }
+      
+      cluster_status() {
+        cluster_info "$1" | jq -r '.Status'
+      }
+      
+      cluster_destroying() {
+          [ "$(cluster_status "$1")" = "DESTROYING" ]
+      }
+      
+      infra_status_summary() {
+        echo -e <<EOF
+      *$2*
+      Infra status for '$1':
+      \`\`\`
+      $(cluster_info "$1")
+      \`\`\`
+      
+      EOF
+      
+      }
+      
+      ALLOWED_NAMES="^[a-z][a-z0-9-]{1,26}[a-z0-9]$"
+      CNAME="${NAME//./-}"
+      
+      if ! [[ "${CNAME}" =~ ${ALLOWED_NAMES} ]]; then
+          printf "ERROR: The cluster name must comply to the regular expression: \"${ALLOWED_NAMES}\"\n"
+          exit 1
+      fi
+      
+      case $(cluster_status "$CNAME") in
+      "")
+          printf "INFO: Cluster $CNAME doesn't exist.\n"
+          ;;
+      FAILED)
+          # Existing cluster is in failed state, i.e. not active.
+          # Don't print the status.
+          ;;
+      CREATING)
+          # Don't wait for the cluster being created, as another workflow could be
+          # waiting for it.
+          # TODO: use concurrency tweak to allow only single workflow running at once.
+          infra_status_summary "$CNAME" "Cluster is being created by another workflow"
+          exit 0
+          ;;
+      READY)
+          # Cluster exists already.
+          infra_status_summary "$CNAME" "Cluster already exists"
+          exit 0
+          ;;
+      DESTROYING)
+          # Cluster is being destroyed.
+          infra_status_summary "$CNAME" "Cluster is being destroyed"
+          while cluster_destroying "$CNAME"; do
+              printf "INFO: Waiting 30s for the cluster '$CNAME' to be destroyed"
+              sleep 30
+          done
+          ;;
+      FINISHED)
+          # Cluster has already been destroyed. Create it again.
+          printf "INFO: Cluster \`$CNAME\` has been destroyed already.\n"
+          infra_status_summary "$CNAME" "Cluster has been destroyed already"
+          ;;
+      *)
+          infra_status_summary "$CNAME" "Unknown status"
+          ;;
+      esac
+      
+      # Creating a cluster
+      printf "Will attempt to create the cluster.\n"
+      
+      OPTIONS=()
+      if [ "$WAIT" = "true" ]; then
+          OPTIONS+=("--wait")
+          printf "WARN: The job will wait for the cluster creation to finish.\n"
+      fi
+      
+      if [ "$NO_SLACK" = "true" ]; then
+          OPTIONS+=("--no-slack")
+          printf "INFO: Skipping sending Slack messages for cluster \`$CNAME\`.\n"
+      fi
+      
+      IFS=',' read -ra args <<<"$ARGS"
+      for arg in "${args[@]}"; do
+          OPTIONS+=("--arg")
+          OPTIONS+=("$arg")
+      done
+      
+      infractl_call create "$FLAVOR" "$CNAME" \
+          --lifespan "$LIFESPAN" \
+          "${OPTIONS[@]}"
+      
+      infra_status_summary "$CNAME" "Cluster creation has been requested"
