@@ -41,6 +41,9 @@ spec:
   - name: infractl-bin
     type: string
     description: Path to the infractl binary
+  results:
+  - name: kubeconfig
+    description: Path to the kubeconfig of the created cluster
   volumes:
   - name: acs-infra-volume
     secret:
@@ -48,6 +51,7 @@ spec:
   steps:
   - name: provision
     image: quay.io/konflux-qe-incubator/konflux-qe-tools:latest@sha256:88d70f9c61d2059e3a084fe6f2fb3ac341bc65efe9c6ba994e42a61bbb54fcba
+    workingDir: /workspace/infra
     volumeMounts:
     - name: acs-infra-volume
       mountPath: /usr/local/infra
@@ -186,4 +190,7 @@ spec:
           --lifespan "$LIFESPAN" \
           "${OPTIONS[@]}"
       
-      infra_status_summary "$CNAME" "Cluster creation has been requested"
+      printf "INFO: Downloading kubeconfig...\n"
+      url=$($INFRACTL artifacts "$NAME" --json | jq '.Artifacts[] | select(.Name=="kubeconfig") | .URL' -r)
+      curl -s $url -o "kubeconfig-$NAME"
+      realpath "kubeconfig-$NAME" > $(results.kubeconfig.path)
