@@ -19,3 +19,4 @@ Consuming repos are:
 * <https://github.com/stackrox/stackrox>
 * <https://github.com/stackrox/collector>
 * <https://github.com/stackrox/scanner>
+* <https://github.com/stackrox/acs-fleet-manager>
