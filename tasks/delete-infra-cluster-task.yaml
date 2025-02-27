@@ -7,10 +7,11 @@ spec:
   params:
   - name: cluster-name
     type: string
-    description: Cluster name ([a-z][a-z0-9-]{1,26}[a-z0-9])
+    description: Cluster name
   - name: acs-infra-secret
     type: string
     description: The name of the secret containing credentials for infra access.
+    default: acs-infra
   - name: infractl-bin
     type: string
     description: Path to the infractl binary
@@ -29,11 +30,18 @@ spec:
       value: /usr/local/infra/cluster.json
     - name: INFRACTL
       value: "$(params.infractl-bin)"
+    - name: CLUSTER_NAME
+      value: "$(params.cluster-name)"
     script: |
       #!/usr/bin/env bash
 
       set -o errexit
       set -o nounset
+
+      if [[ -z "${CLUSTER_NAME:-}"  ]]; then
+          echo "INFO: No cluster needs to be destroyed."
+          return
+      fi
 
       INFRA_TOKEN=$(jq -r '.infraToken' $CONFIG_FILE)
       
