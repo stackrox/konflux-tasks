@@ -24,7 +24,7 @@ spec:
       mountPath: /usr/local/infra
     env:
     - name: CONFIG_FILE
-      value: /usr/local/infra/cluster.json
+      value: /usr/local/infra/config
     - name: CLUSTER_NAME
       value: "$(params.cluster-name)"
     script: |
