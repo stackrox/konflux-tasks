@@ -12,9 +12,6 @@ spec:
     type: string
     description: The name of the secret containing credentials for infra access.
     default: acs-infra
-  - name: infractl-bin
-    type: string
-    description: Path to the infractl binary
   volumes:
   - name: acs-infra-volume
     secret:
