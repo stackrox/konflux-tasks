@@ -3,4 +3,40 @@ kind: Task
 metadata:
   name: delete-infra-cluster
 spec:
-  description: Create a cluster on infra.
+  description: Delete a specific infra cluster
+  params:
+  - name: cluster-name
+    type: string
+    description: Cluster name ([a-z][a-z0-9-]{1,26}[a-z0-9])
+  - name: acs-infra-secret
+    type: string
+    description: The name of the secret containing credentials for infra access.
+  - name: infractl-bin
+    type: string
+    description: Path to the infractl binary
+  volumes:
+  - name: acs-infra-volume
+    secret:
+      secretName: "$(params.acs-infra-secret)"
+  steps:
+  - name: deprovision
+    image: quay.io/konflux-qe-incubator/konflux-qe-tools:latest@sha256:88d70f9c61d2059e3a084fe6f2fb3ac341bc65efe9c6ba994e42a61bbb54fcba
+    volumeMounts:
+    - name: acs-infra-volume
+      mountPath: /usr/local/infra
+    env:
+    - name: CONFIG_FILE
+      value: /usr/local/infra/cluster.json
+    - name: INFRACTL
+      value: "$(params.infractl-bin)"
+    script: |
+      #!/usr/bin/env bash
+
+      set -o errexit
+      set -o nounset
+
+      INFRA_TOKEN=$(jq -r '.infraToken' $CONFIG_FILE)
+      
+      export INFRA_TOKEN
+      
+      $INFRACTL delete "$(params.cluster-name)"

@@ -9,7 +9,7 @@ spec:
     description: Path to the infractl binary.
   steps:
   - name: donwload-infractl
-    image: registry.access.redhat.com/ubi9:latest@sha256:be214e191bbe3f4d0f16a5a4f5642e1f32fccd6fae7d2b6c6acb066ba51fb507
+    image: registry.access.redhat.com/ubi9-minimal:latest@sha256:66b99214cb9733e77c4a12cc3e3cbbe76769a213f4e2767f170a4f0fdf9db490
     workingDir: /workspace/bin
     script: |
       #!/usr/bin/env bash

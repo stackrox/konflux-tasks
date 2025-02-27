@@ -46,7 +46,7 @@ spec:
       secretName: "$(params.acs-infra-secret)"
   steps:
   - name: provision
-    image: registry.access.redhat.com/ubi9:latest@sha256:be214e191bbe3f4d0f16a5a4f5642e1f32fccd6fae7d2b6c6acb066ba51fb507
+    image: quay.io/konflux-qe-incubator/konflux-qe-tools:latest@sha256:88d70f9c61d2059e3a084fe6f2fb3ac341bc65efe9c6ba994e42a61bbb54fcba
     volumeMounts:
     - name: acs-infra-volume
       mountPath: /usr/local/infra
