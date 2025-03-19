@@ -1,0 +1,57 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: post-bigquery-metrics
+spec:
+  description: Adds a record to ACS BigQuery table about the pipeline's execution status.
+  params:
+  results:
+  steps:
+  - name: update-bigquery
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:stable@sha256:767516bf8e50f22c074c07e1138844744b80345e5ca315ea413a88ab22e36089
+    env:
+    - name: PIPELINE_RUN_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['tekton.dev/pipelineRun']
+    - name: ORIGINAL_PIPELINE_RUN_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['pipelinesascode.tekton.dev/original-prname']
+    - name: REPO_URL
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.annotations['pipelinesascode.tekton.dev/repo-url']
+    - name: SOURCE_BRANCH
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.annotations['pipelinesascode.tekton.dev/source-branch']
+    - name: PULL_REQUEST_NUMBER
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['pipelinesascode.tekton.dev/pull-request']
+    - name: COMMIT_SHA
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['pipelinesascode.tekton.dev/sha']
+    script: |
+      #!/usr/bin/env bash
+      
+      set -euo pipefail
+      
+      TABLE_NAME="acs-san-stackroxci.ci_metrics.stackrox_jobs"
+
+      # TODO(ROX-27856): ci-system
+
+      echo would run bq query \
+        --use_legacy_sql=false \
+        --parameter="id::${PIPELINE_RUN_NAME}" \
+        --parameter="name::${ORIGINAL_PIPELINE_RUN_NAME}" \
+        --parameter="repo::${REPO_URL}" \
+        --parameter="branch::${SOURCE_BRANCH}" \
+        --parameter="pr_number:INTEGER:${PULL_REQUEST_NUMBER:-NULL}" \
+        --parameter="commit_sha::${COMMIT_SHA}" \
+        "INSERT INTO ${TABLE_NAME}
+        (id, name, repo, branch, pr_number, commit_sha, started_at)
+        VALUES
+        (@id, @name, @repo, @branch, @pr_number, @commit_sha, CURRENT_TIMESTAMP())"
