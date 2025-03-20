@@ -1,0 +1,57 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: delete-infra-cluster
+spec:
+  description: Delete a specific infra cluster
+  params:
+  - name: cluster-name
+    type: string
+    description: Cluster name
+  - name: acs-infra-secret
+    type: string
+    description: The name of the secret containing credentials for infra access.
+    default: acs-infra
+  volumes:
+  - name: acs-infra-volume
+    secret:
+      secretName: "$(params.acs-infra-secret)"
+  steps:
+  - name: deprovision
+    image: quay.io/konflux-qe-incubator/konflux-qe-tools:latest@sha256:88d70f9c61d2059e3a084fe6f2fb3ac341bc65efe9c6ba994e42a61bbb54fcba
+    volumeMounts:
+    - name: acs-infra-volume
+      mountPath: /usr/local/infra
+    env:
+    - name: CONFIG_FILE
+      value: /usr/local/infra/config
+    - name: CLUSTER_NAME
+      value: "$(params.cluster-name)"
+    script: |
+      #!/usr/bin/env bash
+
+      set -o errexit
+      set -o nounset
+      
+      download_infractl() {
+        curl --fail -sL https://infra.rox.systems/v1/cli/linux/amd64/upgrade \
+          | jq -r ".result.fileChunk" \
+          | base64 -d \
+        > infractl
+        chmod +x infractl
+        export INFRACTL=$(realpath ./infractl)
+        printf "INFO: $($INFRACTL --version)\n" 
+      }
+      
+      if [[ -z "${CLUSTER_NAME:-}"  ]]; then
+          echo "INFO: No cluster needs to be destroyed."
+          return
+      fi
+
+      INFRA_TOKEN=$(jq -r '.infraToken' $CONFIG_FILE)
+      
+      export INFRA_TOKEN
+      
+      download_infractl
+      
+      $INFRACTL delete "$(params.cluster-name)"
