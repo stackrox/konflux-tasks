@@ -9,7 +9,8 @@ spec:
     description: Image reference.
     type: string
   results:
-  - name: IMAGE_DIGEST
+  - name: ARTIFACT_URI
+  - name: ARTIFACT_DIGEST
     description: Image digest in the format `sha256:abcdef0123`.
   - name: GIT_REF
     description: Git commit for the image's source code from `vcs-ref` image label.
@@ -46,6 +47,7 @@ spec:
         exit 1
       fi
 
-      echo -n "${infos[0]}" | tee "$(results.IMAGE_DIGEST.path)"
+      echo -n "$(params.IMAGE)" | tee "$(results.ARTIFACT_URI.path)"
+      echo -n "${infos[0]}" | tee "$(results.ARTIFACT_DIGEST.path)"
       echo -n "${infos[1]}" | tee "$(results.GIT_REF.path)"
       echo -n "${infos[2]}" | tee "$(results.GIT_REPO.path)"
