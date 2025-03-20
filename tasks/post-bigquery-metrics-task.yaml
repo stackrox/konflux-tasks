@@ -6,9 +6,17 @@ spec:
   description: Adds a record to ACS BigQuery table about the pipeline's execution status.
   params:
   results:
+  volumes:
+  - name: gcp-service-account
+    secret:
+      optional: false
+      secretName: konflux-metrics-gcp-service-account
   steps:
   - name: update-bigquery
     image: gcr.io/google.com/cloudsdktool/google-cloud-cli:stable@sha256:767516bf8e50f22c074c07e1138844744b80345e5ca315ea413a88ab22e36089
+    volumeMounts:
+    - name: gcp-service-account
+      mountPath: /mnt/gcp-service-account
     env:
     - name: PIPELINE_RUN_NAME
       valueFrom:
@@ -36,14 +44,20 @@ spec:
           fieldPath: metadata.labels['pipelinesascode.tekton.dev/sha']
     script: |
       #!/usr/bin/env bash
-      
+
       set -euo pipefail
-      
-      TABLE_NAME="acs-san-stackroxci.ci_metrics.stackrox_jobs"
+
+      GCP_PROJECT="acs-san-stackroxci"
+      TABLE_NAME="${GCP_PROJECT}.ci_metrics.stackrox_jobs"
 
       # TODO(ROX-27856): ci-system
+      # TODO(ROX-27856): no dry run
 
-      echo would run bq query \
+      gcloud auth activate-service-account --key-file /mnt/gcp-service-account/konflux-metrics-gcp-service-account
+      gcloud config set project "${GCP_PROJECT}"
+
+      bq query \
+        --dry_run \
         --use_legacy_sql=false \
         --parameter="id::${PIPELINE_RUN_NAME}" \
         --parameter="name::${ORIGINAL_PIPELINE_RUN_NAME}" \
