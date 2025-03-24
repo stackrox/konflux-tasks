@@ -96,7 +96,8 @@ spec:
         RETRY_TIMES=1000
         echo "This is a tagged build. If any download times out, it is probably because the blobs were not published by the GitHub Workflow."
         echo "The publishing usually takes about 1 hour after the tag is pushed."
-        echo "Go to https://github.com/stackrox/scanner/actions to debug."
+        echo "Go to https://github.com/stackrox/scanner/actions/workflows/ci.yaml?query=branch%3A${tag} to debug."
+        echo "Look for a job called upload-dumps-for-downstream."
       else
         >&2 echo -e "Error: the HEAD commit has multiple tags, don't know which one to choose:\n${tag}"
         exit 5
