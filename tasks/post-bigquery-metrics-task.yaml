@@ -50,8 +50,6 @@ spec:
       GCP_PROJECT="acs-san-stackroxci"
       TABLE_NAME="${GCP_PROJECT}.ci_metrics.stackrox_jobs"
 
-      # TODO(ROX-27856): ci-system
-
       gcloud auth activate-service-account --key-file /mnt/gcp-service-account/konflux-metrics-gcp-service-account
       gcloud config set project "${GCP_PROJECT}"
 
@@ -64,6 +62,6 @@ spec:
         --parameter="pr_number:INTEGER:${PULL_REQUEST_NUMBER:-NULL}" \
         --parameter="commit_sha::${COMMIT_SHA}" \
         "INSERT INTO ${TABLE_NAME}
-        (id, name, repo, branch, pr_number, commit_sha, started_at)
+        (id, name, repo, branch, pr_number, commit_sha, started_at, ci_system)
         VALUES
-        (@id, @name, @repo, @branch, @pr_number, @commit_sha, CURRENT_TIMESTAMP())"
+        (@id, @name, @repo, @branch, @pr_number, @commit_sha, CURRENT_TIMESTAMP(), 'konflux')"
