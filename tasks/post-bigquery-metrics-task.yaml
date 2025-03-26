@@ -5,6 +5,9 @@ metadata:
 spec:
   description: Adds a record to ACS BigQuery table about the pipeline's execution status.
   params:
+  - name: AGGREGATE_TASKS_STATUS
+    default: ''
+    description: TODO
   results:
   volumes:
   - name: gcp-service-account
@@ -53,15 +56,35 @@ spec:
       gcloud auth activate-service-account --key-file /mnt/gcp-service-account/konflux-metrics-gcp-service-account
       gcloud config set project "${GCP_PROJECT}"
 
-      bq query \
-        --use_legacy_sql=false \
-        --parameter="id::${PIPELINE_RUN_NAME}" \
-        --parameter="name::${ORIGINAL_PIPELINE_RUN_NAME}" \
-        --parameter="repo::${REPO_URL}" \
-        --parameter="branch::${SOURCE_BRANCH}" \
-        --parameter="pr_number:INTEGER:${PULL_REQUEST_NUMBER:-NULL}" \
-        --parameter="commit_sha::${COMMIT_SHA}" \
-        "INSERT INTO ${TABLE_NAME}
-        (id, name, repo, branch, pr_number, commit_sha, started_at, ci_system)
-        VALUES
-        (@id, @name, @repo, @branch, @pr_number, @commit_sha, CURRENT_TIMESTAMP(), 'konflux')"
+      AGGREGATE_TASKS_STATUS="$(params.AGGREGATE_TASKS_STATUS)"
+
+      if [[ -n "${AGGREGATE_TASKS_STATUS}" ]]; then
+
+        echo "This is the second and the final task call, updating a record"
+        bq query \
+          --use_legacy_sql=false \
+          --parameter="id::${PIPELINE_RUN_NAME}" \
+          --parameter="outcome::${AGGREGATE_TASKS_STATUS}" \
+          "UPDATE ${TABLE_NAME}
+          SET
+            stopped_at=CURRENT_TIMESTAMP(),
+            outcome=@outcome
+          WHERE id=@id"
+
+      else
+
+        echo "This is the first task call, inserting a record"
+        bq query \
+          --use_legacy_sql=false \
+          --parameter="id::${PIPELINE_RUN_NAME}" \
+          --parameter="name::${ORIGINAL_PIPELINE_RUN_NAME}" \
+          --parameter="repo::${REPO_URL}" \
+          --parameter="branch::${SOURCE_BRANCH}" \
+          --parameter="pr_number:INTEGER:${PULL_REQUEST_NUMBER:-NULL}" \
+          --parameter="commit_sha::${COMMIT_SHA}" \
+          "INSERT INTO ${TABLE_NAME}
+          (id, name, repo, branch, pr_number, commit_sha, started_at, ci_system)
+          VALUES
+          (@id, @name, @repo, @branch, @pr_number, @commit_sha, CURRENT_TIMESTAMP(), 'konflux')"
+
+      fi
