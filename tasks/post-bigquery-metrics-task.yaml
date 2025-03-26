@@ -51,13 +51,11 @@ spec:
       TABLE_NAME="${GCP_PROJECT}.ci_metrics.stackrox_jobs"
 
       # TODO(ROX-27856): ci-system
-      # TODO(ROX-27856): no dry run
 
       gcloud auth activate-service-account --key-file /mnt/gcp-service-account/konflux-metrics-gcp-service-account
       gcloud config set project "${GCP_PROJECT}"
 
       bq query \
-        --dry_run \
         --use_legacy_sql=false \
         --parameter="id::${PIPELINE_RUN_NAME}" \
         --parameter="name::${ORIGINAL_PIPELINE_RUN_NAME}" \
