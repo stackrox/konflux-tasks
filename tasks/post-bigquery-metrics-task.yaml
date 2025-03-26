@@ -7,7 +7,11 @@ spec:
   params:
   - name: AGGREGATE_TASKS_STATUS
     default: ''
-    description: TODO
+    description: |
+      Status of normal (non-final) tasks of the pipeline.
+      https://tekton.dev/docs/pipelines/pipelines/#using-aggregate-execution-status-of-all-tasks
+      When the task is placed in the pipeline's finally block, pass here `$(tasks.status)`.
+      When this task is in the beginning of the pipeline, don't pass anything.
   results:
   volumes:
   - name: gcp-service-account
@@ -58,33 +62,34 @@ spec:
 
       AGGREGATE_TASKS_STATUS="$(params.AGGREGATE_TASKS_STATUS)"
 
-      if [[ -n "${AGGREGATE_TASKS_STATUS}" ]]; then
+      bq query \
+        --use_legacy_sql=false \
+        --parameter="id::${PIPELINE_RUN_NAME}" \
+        --parameter="name::${ORIGINAL_PIPELINE_RUN_NAME}" \
+        --parameter="repo::${REPO_URL}" \
+        --parameter="branch::${SOURCE_BRANCH}" \
+        --parameter="pr_number:INTEGER:${PULL_REQUEST_NUMBER:-NULL}" \
+        --parameter="commit_sha::${COMMIT_SHA}" \
+        --parameter="outcome::${AGGREGATE_TASKS_STATUS:-NULL}" \
+        "
+        -- Create a temporary table for holding a record for this job with the same schema as the target table.
+        CREATE TEMP TABLE _SESSION.this_job AS SELECT * FROM ${TABLE_NAME} LIMIT 0;
 
-        echo "This is the second and the final task call, updating a record"
-        bq query \
-          --use_legacy_sql=false \
-          --parameter="id::${PIPELINE_RUN_NAME}" \
-          --parameter="outcome::${AGGREGATE_TASKS_STATUS}" \
-          "UPDATE ${TABLE_NAME}
-          SET
-            stopped_at=CURRENT_TIMESTAMP(),
-            outcome=@outcome
-          WHERE id=@id"
-
-      else
-
-        echo "This is the first task call, inserting a record"
-        bq query \
-          --use_legacy_sql=false \
-          --parameter="id::${PIPELINE_RUN_NAME}" \
-          --parameter="name::${ORIGINAL_PIPELINE_RUN_NAME}" \
-          --parameter="repo::${REPO_URL}" \
-          --parameter="branch::${SOURCE_BRANCH}" \
-          --parameter="pr_number:INTEGER:${PULL_REQUEST_NUMBER:-NULL}" \
-          --parameter="commit_sha::${COMMIT_SHA}" \
-          "INSERT INTO ${TABLE_NAME}
-          (id, name, repo, branch, pr_number, commit_sha, started_at, ci_system)
+        -- Add the job's record into the temporary table.
+        INSERT INTO _SESSION.this_job
+          (id, name, repo, branch, pr_number, commit_sha, started_at, stopped_at, outcome, ci_system)
           VALUES
-          (@id, @name, @repo, @branch, @pr_number, @commit_sha, CURRENT_TIMESTAMP(), 'konflux')"
+          (@id, @name, @repo, @branch, @pr_number, @commit_sha, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP(), @outcome, 'konflux');
 
-      fi
+        -- Upsert a record from the temporary table into the target table.
+        MERGE INTO ${TABLE_NAME} T
+        USING _SESSION.this_job S
+        ON T.id = S.id
+        WHEN NOT MATCHED BY TARGET THEN
+          INSERT ROW
+        WHEN MATCHED THEN
+          UPDATE SET stopped_at = S.stopped_at, outcome = S.outcome;
+
+        -- Remove the temporary table (sooner than Google would do it).
+        DROP TABLE _SESSION.this_job;
+        "
