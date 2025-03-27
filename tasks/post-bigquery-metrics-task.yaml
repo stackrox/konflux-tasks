@@ -14,11 +14,11 @@ spec:
     The task should be called again at the end of the pipeline, in `finally` block with provided aggregate tasks status
     so that the record can be updated with the outcome and the (approximate) pipeline completion timestamp.
 
-    Obviously, the approach in this task has limitations that we can't capture the status of the overall pipeline
+    Obviously, such an approach with this task has limitations that we can't capture the status of the overall pipeline
     including the `finally` tasks and that it does not provide visibility into the failures before or after the
     pipeline.
-    However, this task may still be useful for the situation when the majority of the observed failures is in the
-    pipeline itself.
+    However, it still may be useful for the situation when the majority of the observed failures is in the pipeline
+    itself.
   params:
   - name: AGGREGATE_TASKS_STATUS
     default: ''
@@ -27,7 +27,6 @@ spec:
       When this task is at the beginning of the pipeline, don't pass anything.
       When the task is placed in the pipeline's finally block, pass here `$(tasks.status)`.
       Ref https://tekton.dev/docs/pipelines/pipelines/#using-aggregate-execution-status-of-all-tasks
-  results:
   volumes:
   - name: gcp-service-account
     secret:
@@ -41,26 +40,32 @@ spec:
       mountPath: /mnt/gcp-service-account
     env:
     - name: PIPELINE_RUN_NAME
+      # E.g. "scanner-v4-db-on-push-477w8"
       valueFrom:
         fieldRef:
           fieldPath: metadata.labels['tekton.dev/pipelineRun']
     - name: ORIGINAL_PIPELINE_RUN_NAME
+      # E.g. "scanner-v4-db-on-push"
       valueFrom:
         fieldRef:
           fieldPath: metadata.labels['pipelinesascode.tekton.dev/original-prname']
     - name: REPO_URL
+      # E.g. "https://github.com/stackrox/stackrox"
       valueFrom:
         fieldRef:
           fieldPath: metadata.annotations['pipelinesascode.tekton.dev/repo-url']
     - name: SOURCE_BRANCH
+      # E.g. "konflux/references/master"
       valueFrom:
         fieldRef:
           fieldPath: metadata.annotations['pipelinesascode.tekton.dev/source-branch']
     - name: PULL_REQUEST_NUMBER
+      # E.g. "14577"
       valueFrom:
         fieldRef:
           fieldPath: metadata.labels['pipelinesascode.tekton.dev/pull-request']
     - name: COMMIT_SHA
+      # E.g. "2bb555465e2b822abb4eb13da2167908670ff5c9"
       valueFrom:
         fieldRef:
           fieldPath: metadata.labels['pipelinesascode.tekton.dev/sha']
@@ -96,7 +101,7 @@ spec:
           VALUES
           (@id, @name, @repo, @branch, @pr_number, @commit_sha, CURRENT_TIMESTAMP(), @outcome, 'konflux');
 
-        -- If the outcome is provided, set the job's end timestamp to now.
+        -- If the outcome is provided, set the job's end timestamp to "now".
         UPDATE _SESSION.this_job
         SET stopped_at = CASE WHEN outcome IS NULL THEN NULL ELSE CURRENT_TIMESTAMP() END
         WHERE id = @id;
