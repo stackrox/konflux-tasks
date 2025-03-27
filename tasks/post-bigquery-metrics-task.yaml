@@ -34,6 +34,8 @@ spec:
       secretName: konflux-metrics-gcp-service-account
   steps:
   - name: update-bigquery
+    # GCP CLIs aren't available in Quay or in the Red Hat Registry. If the availability of Google's registry becomes a
+    # problem for our pipelines stability, we can set up image mirroring.
     image: gcr.io/google.com/cloudsdktool/google-cloud-cli:stable@sha256:767516bf8e50f22c074c07e1138844744b80345e5ca315ea413a88ab22e36089
     volumeMounts:
     - name: gcp-service-account
