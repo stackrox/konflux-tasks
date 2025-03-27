@@ -1,0 +1,126 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: post-bigquery-metrics
+spec:
+  description: |
+    Adds a record to ACS BigQuery table about the pipeline's execution status.
+
+    Find the results in Google Cloud Console, BigQuery, StackRox CI project.
+
+    This task should be called at the beginning of the pipeline so that it can insert a record that would later allow
+    us identify any pipelines which were started but did not get completed. This also saves the (approximate) start
+    timestamp.
+    The task should be called again at the end of the pipeline, in `finally` block with provided aggregate tasks status
+    so that the record can be updated with the outcome and the (approximate) pipeline completion timestamp.
+
+    Obviously, such an approach with this task has limitations that we can't capture the status of the overall pipeline
+    including the `finally` tasks and that it does not provide visibility into the failures before or after the
+    pipeline.
+    However, it still may be useful for the situation when the majority of the observed failures is in the pipeline
+    itself.
+  params:
+  - name: AGGREGATE_TASKS_STATUS
+    default: ''
+    description: |
+      Status of normal (non-final) tasks of the pipeline.
+      When this task is at the beginning of the pipeline, don't pass anything.
+      When the task is placed in the pipeline's finally block, pass here `$(tasks.status)`.
+      Ref https://tekton.dev/docs/pipelines/pipelines/#using-aggregate-execution-status-of-all-tasks
+  volumes:
+  - name: gcp-service-account
+    secret:
+      optional: false
+      secretName: konflux-metrics-gcp-service-account
+  steps:
+  - name: update-bigquery
+    # GCP CLIs aren't available in Quay or in the Red Hat Registry. If the availability of Google's registry becomes a
+    # problem for our pipelines stability, we can set up image mirroring.
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:stable@sha256:767516bf8e50f22c074c07e1138844744b80345e5ca315ea413a88ab22e36089
+    volumeMounts:
+    - name: gcp-service-account
+      mountPath: /mnt/gcp-service-account
+    env:
+    - name: PIPELINE_RUN_NAME
+      # E.g. "scanner-v4-db-on-push-477w8"
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['tekton.dev/pipelineRun']
+    - name: ORIGINAL_PIPELINE_RUN_NAME
+      # E.g. "scanner-v4-db-on-push"
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['pipelinesascode.tekton.dev/original-prname']
+    - name: REPO_URL
+      # E.g. "https://github.com/stackrox/stackrox"
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.annotations['pipelinesascode.tekton.dev/repo-url']
+    - name: SOURCE_BRANCH
+      # E.g. "konflux/references/master"
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.annotations['pipelinesascode.tekton.dev/source-branch']
+    - name: PULL_REQUEST_NUMBER
+      # E.g. "14577"
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['pipelinesascode.tekton.dev/pull-request']
+    - name: COMMIT_SHA
+      # E.g. "2bb555465e2b822abb4eb13da2167908670ff5c9"
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['pipelinesascode.tekton.dev/sha']
+    script: |
+      #!/usr/bin/env bash
+
+      set -euo pipefail
+
+      GCP_PROJECT="acs-san-stackroxci"
+      TABLE_NAME="${GCP_PROJECT}.ci_metrics.stackrox_jobs"
+
+      gcloud auth activate-service-account --key-file /mnt/gcp-service-account/konflux-metrics-gcp-service-account
+      gcloud config set project "${GCP_PROJECT}"
+
+      AGGREGATE_TASKS_STATUS="$(params.AGGREGATE_TASKS_STATUS)"
+
+      bq query \
+        --use_legacy_sql=false \
+        --parameter="id::${PIPELINE_RUN_NAME}" \
+        --parameter="name::${ORIGINAL_PIPELINE_RUN_NAME}" \
+        --parameter="repo::${REPO_URL}" \
+        --parameter="branch::${SOURCE_BRANCH}" \
+        --parameter="pr_number:INTEGER:${PULL_REQUEST_NUMBER:-NULL}" \
+        --parameter="commit_sha::${COMMIT_SHA}" \
+        --parameter="outcome::${AGGREGATE_TASKS_STATUS:-NULL}" \
+        "
+        -- Create a temporary table for holding a record for this job with the same schema as the target table.
+        CREATE TEMP TABLE _SESSION.this_job AS SELECT * FROM ${TABLE_NAME} LIMIT 0;
+
+        -- Add the job's record into the temporary table.
+        INSERT INTO _SESSION.this_job
+          (id, name, repo, branch, pr_number, commit_sha, started_at, outcome, ci_system)
+          VALUES
+          (@id, @name, @repo, @branch, @pr_number, @commit_sha, CURRENT_TIMESTAMP(), @outcome, 'konflux');
+
+        -- If the outcome is provided, set the job's end timestamp to "now" which is recorded in started_at.
+        UPDATE _SESSION.this_job
+        SET stopped_at = CASE
+            WHEN outcome IS NULL
+            THEN NULL
+            ELSE started_at
+          END
+        WHERE id = @id;
+
+        -- Upsert a record from the temporary table into the target table.
+        MERGE INTO ${TABLE_NAME} T
+        USING _SESSION.this_job S
+        ON T.id = S.id
+        WHEN NOT MATCHED BY TARGET THEN
+          INSERT ROW
+        WHEN MATCHED THEN
+          UPDATE SET stopped_at = S.stopped_at, outcome = S.outcome;
+
+        -- Remove the temporary table (if not us, Google would remove it after 24 hours).
+        DROP TABLE _SESSION.this_job;
+        "
