@@ -105,7 +105,11 @@ spec:
 
         -- If the outcome is provided, set the job's end timestamp to "now" which is recorded in started_at.
         UPDATE _SESSION.this_job
-        SET stopped_at = CASE WHEN outcome IS NULL THEN NULL ELSE started_at END
+        SET stopped_at = CASE
+            WHEN outcome IS NULL
+            THEN NULL
+            ELSE started_at
+          END
         WHERE id = @id;
 
         -- Upsert a record from the temporary table into the target table.
