@@ -103,9 +103,9 @@ spec:
           VALUES
           (@id, @name, @repo, @branch, @pr_number, @commit_sha, CURRENT_TIMESTAMP(), @outcome, 'konflux');
 
-        -- If the outcome is provided, set the job's end timestamp to "now".
+        -- If the outcome is provided, set the job's end timestamp to "now" which is recorded in started_at.
         UPDATE _SESSION.this_job
-        SET stopped_at = CASE WHEN outcome IS NULL THEN NULL ELSE CURRENT_TIMESTAMP() END
+        SET stopped_at = CASE WHEN outcome IS NULL THEN NULL ELSE started_at END
         WHERE id = @id;
 
         -- Upsert a record from the temporary table into the target table.
