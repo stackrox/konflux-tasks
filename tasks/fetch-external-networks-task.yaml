@@ -42,7 +42,7 @@ spec:
     - use
     - $(params.SOURCE_ARTIFACT)=/var/workdir/source
   - name: fetch-external-networks
-    image: registry.access.redhat.com/ubi9-minimal:latest@sha256:bafd57451de2daa71ed301b277d49bd120b474ed438367f087eac0b885a668dc
+    image: registry.access.redhat.com/ubi9-minimal:latest@sha256:ac61c96b93894b9169221e87718733354dd3765dd4a62b275893c7ff0d876869
     workingDir: /var/workdir/source
     script: |
       #!/usr/bin/env bash
