@@ -52,6 +52,11 @@ spec:
       valueFrom:
         fieldRef:
           fieldPath: metadata.labels['tekton.dev/pipelineRun']
+    - name: PIPELINE_RUN_UID
+      # E.g. "d9ba34da-d51a-4104-9c40-c9d537d76ef0"
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['tekton.dev/pipelineRunUID']
     - name: ORIGINAL_PIPELINE_RUN_NAME
       # E.g. "scanner-v4-db-on-push"
       valueFrom:
@@ -90,6 +95,10 @@ spec:
 
       AGGREGATE_TASKS_STATUS="$(params.AGGREGATE_TASKS_STATUS)"
 
+      # Even though PIPELINE_RUN_NAME looks unique, it's not guaranteed to be so. There's a chance the same entropy
+      # suffix will be generated over a long period of time. Since we don't want metrics to clash, we append UUID.
+      ID="${PIPELINE_RUN_NAME}.${PIPELINE_RUN_UID}"
+
       successes=0
       errors=0
 
@@ -105,7 +114,7 @@ spec:
         if bq query \
             --headless \
             --use_legacy_sql=false \
-            --parameter="id::${PIPELINE_RUN_NAME}" \
+            --parameter="id::${ID}" \
             --parameter="name::${ORIGINAL_PIPELINE_RUN_NAME}" \
             --parameter="repo::${REPO_URL}" \
             --parameter="branch::${SOURCE_BRANCH}" \
