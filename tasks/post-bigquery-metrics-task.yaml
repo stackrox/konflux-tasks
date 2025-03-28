@@ -104,6 +104,7 @@ spec:
 
         # todo: un-negate
         if ! bq query \
+            --headless \
             --use_legacy_sql=false \
             --parameter="id::${PIPELINE_RUN_NAME}" \
             --parameter="name::${ORIGINAL_PIPELINE_RUN_NAME}" \
