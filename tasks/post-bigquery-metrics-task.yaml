@@ -101,6 +101,7 @@ spec:
 
       successes=0
       errors=0
+      note=''
 
       while (( errors < 3 )); do
         if (( errors > 0 )); then
@@ -158,6 +159,7 @@ spec:
         fi
 
         (( errors+=1 ))
+        note="There were errors updating BigQuery. See log."
       done
 
       # Form and produce TEST_OUTPUT.
@@ -174,6 +176,7 @@ spec:
           "timestamp": "${timestamp}",
           "successes": "${successes}",
           "failures": "0",
-          "warnings": "${errors}"
+          "warnings": "${errors}",
+          "note": "${note}"
         }
       EOF
