@@ -27,12 +27,6 @@ spec:
       When this task is at the beginning of the pipeline, don't pass anything.
       When the task is placed in the pipeline's finally block, pass here `$(tasks.status)`.
       Ref https://tekton.dev/docs/pipelines/pipelines/#using-aggregate-execution-status-of-all-tasks
-  results:
-  - name: TEST_OUTPUT
-    description: |
-      Indicates in a way that should not fail the overall pipeline whether metric posting succeeded.
-      The format is according to Konflux convention, see
-      https://konflux-ci.dev/architecture/ADR/0030-tekton-results-naming-convention.html
   volumes:
   - name: gcp-service-account
     secret:
@@ -101,7 +95,6 @@ spec:
 
       successes=0
       errors=0
-      note=''
 
       while (( errors < 3 )); do
         if (( errors > 0 )); then
@@ -159,24 +152,9 @@ spec:
         fi
 
         (( errors+=1 ))
-        note="There were errors updating BigQuery. See log."
       done
 
-      # Form and produce TEST_OUTPUT.
-      outcome=""
-      if (( successes > 0 )); then
-        outcome="SUCCESS"
-      else
-        outcome="WARNING"
+      if (( successes==0 )); then
+        echo >&2 "Could not put info in BigQuery."
+        exit 6
       fi
-      timestamp="$(date --rfc-3339=seconds | sed 's/ /T/')"
-      tee "$(results.TEST_OUTPUT.path)" <<EOF
-        {
-          "result": "${outcome}",
-          "timestamp": "${timestamp}",
-          "successes": "${successes}",
-          "failures": "0",
-          "warnings": "${errors}",
-          "note": "${note}"
-        }
-      EOF
