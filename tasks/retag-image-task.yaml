@@ -34,7 +34,7 @@ spec:
     description: Image reference of the output image containing both the repository, the tag and the digest.
   steps:
   - name: retag-image
-    image: quay.io/konflux-ci/release-service-utils:latest@sha256:73e30e84cfb102e0de4877cf25f73e45b84fbca0acc985de96cc97b337b0005e
+    image: quay.io/konflux-ci/release-service-utils:latest@sha256:fe0f21bcb79c2fd03d35b2afe133ec56871167c349e863cb69c7302ebada5e48
     script: |
       #!/usr/bin/env bash
       set -euo pipefail
