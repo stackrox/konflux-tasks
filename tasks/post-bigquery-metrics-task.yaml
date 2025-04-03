@@ -46,6 +46,11 @@ spec:
       valueFrom:
         fieldRef:
           fieldPath: metadata.labels['tekton.dev/pipelineRun']
+    - name: PIPELINE_RUN_UID
+      # E.g. "d9ba34da-d51a-4104-9c40-c9d537d76ef0"
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['tekton.dev/pipelineRunUID']
     - name: ORIGINAL_PIPELINE_RUN_NAME
       # E.g. "scanner-v4-db-on-push"
       valueFrom:
@@ -84,43 +89,72 @@ spec:
 
       AGGREGATE_TASKS_STATUS="$(params.AGGREGATE_TASKS_STATUS)"
 
-      bq query \
-        --use_legacy_sql=false \
-        --parameter="id::${PIPELINE_RUN_NAME}" \
-        --parameter="name::${ORIGINAL_PIPELINE_RUN_NAME}" \
-        --parameter="repo::${REPO_URL}" \
-        --parameter="branch::${SOURCE_BRANCH}" \
-        --parameter="pr_number:INTEGER:${PULL_REQUEST_NUMBER:-NULL}" \
-        --parameter="commit_sha::${COMMIT_SHA}" \
-        --parameter="outcome::${AGGREGATE_TASKS_STATUS:-NULL}" \
-        "
-        -- Create a temporary table for holding a record for this job with the same schema as the target table.
-        CREATE TEMP TABLE _SESSION.this_job AS SELECT * FROM ${TABLE_NAME} LIMIT 0;
+      # Even though PIPELINE_RUN_NAME looks unique, it's not guaranteed to be so. There's a chance the same entropy
+      # suffix will be generated over a long period of time. Since we don't want metrics to clash, we append UUID.
+      ID="${PIPELINE_RUN_NAME}.${PIPELINE_RUN_UID}"
 
-        -- Add the job's record into the temporary table.
-        INSERT INTO _SESSION.this_job
-          (id, name, repo, branch, pr_number, commit_sha, started_at, outcome, ci_system)
-          VALUES
-          (@id, @name, @repo, @branch, @pr_number, @commit_sha, CURRENT_TIMESTAMP(), @outcome, 'konflux');
+      successes=0
+      errors=0
 
-        -- If the outcome is provided, set the job's end timestamp to "now" which is recorded in started_at.
-        UPDATE _SESSION.this_job
-        SET stopped_at = CASE
-            WHEN outcome IS NULL
-            THEN NULL
-            ELSE started_at
-          END
-        WHERE id = @id;
+      while (( errors < 3 )); do
+        if (( errors > 0 )); then
+          # Sleep for ~3 minutes. One minute is enough for the task to complete in normal conditions and so hopefully
+          # this sleep should be sufficient for error conditions like full requests queue to resolve.
+          (( delay=120 + RANDOM%120 ))
+          echo "Making ${delay} seconds pause before attempting a query"
+          sleep "${delay}"
+        fi
 
-        -- Upsert a record from the temporary table into the target table.
-        MERGE INTO ${TABLE_NAME} T
-        USING _SESSION.this_job S
-        ON T.id = S.id
-        WHEN NOT MATCHED BY TARGET THEN
-          INSERT ROW
-        WHEN MATCHED THEN
-          UPDATE SET stopped_at = S.stopped_at, outcome = S.outcome;
+        if bq query \
+            --headless \
+            --use_legacy_sql=false \
+            --parameter="id::${ID}" \
+            --parameter="name::${ORIGINAL_PIPELINE_RUN_NAME}" \
+            --parameter="repo::${REPO_URL}" \
+            --parameter="branch::${SOURCE_BRANCH}" \
+            --parameter="pr_number:INTEGER:${PULL_REQUEST_NUMBER:-NULL}" \
+            --parameter="commit_sha::${COMMIT_SHA}" \
+            --parameter="outcome::${AGGREGATE_TASKS_STATUS:-NULL}" \
+            "
+            -- Create a temporary table for holding a record for this job with the same schema as the target table.
+            CREATE TEMP TABLE _SESSION.this_job AS SELECT * FROM ${TABLE_NAME} LIMIT 0;
 
-        -- Remove the temporary table (if not us, Google would remove it after 24 hours).
-        DROP TABLE _SESSION.this_job;
-        "
+            -- Add the job's record into the temporary table.
+            INSERT INTO _SESSION.this_job
+              (id, name, repo, branch, pr_number, commit_sha, started_at, outcome, ci_system)
+              VALUES
+              (@id, @name, @repo, @branch, @pr_number, @commit_sha, CURRENT_TIMESTAMP(), @outcome, 'konflux');
+
+            -- If the outcome is provided, set the job's end timestamp to "now" which is recorded in started_at.
+            UPDATE _SESSION.this_job
+            SET stopped_at = CASE
+                WHEN outcome IS NULL
+                THEN NULL
+                ELSE started_at
+              END
+            WHERE id = @id;
+
+            -- Upsert a record from the temporary table into the target table.
+            MERGE INTO ${TABLE_NAME} T
+            USING _SESSION.this_job S
+            ON T.id = S.id
+            WHEN NOT MATCHED BY TARGET THEN
+              INSERT ROW
+            WHEN MATCHED THEN
+              UPDATE SET stopped_at = S.stopped_at, outcome = S.outcome;
+
+            -- Remove the temporary table (if not us, Google would remove it after 24 hours).
+            DROP TABLE _SESSION.this_job;
+            "
+        then
+          (( successes+=1 ))
+          break
+        fi
+
+        (( errors+=1 ))
+      done
+
+      if (( successes==0 )); then
+        echo >&2 "Could not put info in BigQuery."
+        exit 6
+      fi
