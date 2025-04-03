@@ -105,8 +105,7 @@ spec:
           sleep "${delay}"
         fi
 
-        # todo: un-negate
-        if ! bq query \
+        if bq query \
             --headless \
             --use_legacy_sql=false \
             --parameter="id::${ID}" \
