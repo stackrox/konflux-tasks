@@ -89,6 +89,14 @@ spec:
 
       AGGREGATE_TASKS_STATUS="$(params.AGGREGATE_TASKS_STATUS)"
 
+      if [[ -z "${AGGREGATE_TASKS_STATUS}" ]]; then
+        started_at="CURRENT_TIMESTAMP()"
+        stopped_at="NULL"
+      else
+        started_at="NULL"
+        stopped_at="CURRENT_TIMESTAMP()"
+      fi
+
       # Even though PIPELINE_RUN_NAME looks unique, it's not guaranteed to be so. There's a chance the same entropy
       # suffix will be generated over a long period of time. Since we don't want metrics to clash, we append UUID.
       ID="${PIPELINE_RUN_NAME}.${PIPELINE_RUN_UID}"
@@ -116,35 +124,10 @@ spec:
             --parameter="commit_sha::${COMMIT_SHA}" \
             --parameter="outcome::${AGGREGATE_TASKS_STATUS:-NULL}" \
             "
-            -- Create a temporary table for holding a record for this job with the same schema as the target table.
-            CREATE TEMP TABLE _SESSION.this_job AS SELECT * FROM ${TABLE_NAME} LIMIT 0;
-
-            -- Add the job's record into the temporary table.
-            INSERT INTO _SESSION.this_job
-              (id, name, repo, branch, pr_number, commit_sha, started_at, outcome, ci_system)
+            INSERT INTO ${TABLE_NAME}
+              (id, name, repo, branch, pr_number, commit_sha, started_at, stopped_at, outcome, ci_system)
               VALUES
-              (@id, @name, @repo, @branch, @pr_number, @commit_sha, CURRENT_TIMESTAMP(), @outcome, 'konflux');
-
-            -- If the outcome is provided, set the job's end timestamp to "now" which is recorded in started_at.
-            UPDATE _SESSION.this_job
-            SET stopped_at = CASE
-                WHEN outcome IS NULL
-                THEN NULL
-                ELSE started_at
-              END
-            WHERE id = @id;
-
-            -- Upsert a record from the temporary table into the target table.
-            MERGE INTO ${TABLE_NAME} T
-            USING _SESSION.this_job S
-            ON T.id = S.id
-            WHEN NOT MATCHED BY TARGET THEN
-              INSERT ROW
-            WHEN MATCHED THEN
-              UPDATE SET stopped_at = S.stopped_at, outcome = S.outcome;
-
-            -- Remove the temporary table (if not us, Google would remove it after 24 hours).
-            DROP TABLE _SESSION.this_job;
+              (@id, @name, @repo, @branch, @pr_number, @commit_sha, ${started_at}, ${stopped_at}, @outcome, 'konflux')
             "
         then
           (( successes+=1 ))
