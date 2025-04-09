@@ -17,7 +17,7 @@ spec:
     description: Git repository URL for the image's source code from `source-location` image label.
   steps:
   - name: wait-for-image
-    image: registry.access.redhat.com/ubi9/skopeo@sha256:29347e7781afc2b9198530b784d67e40672ef5629de79ee3646517143f164922
+    image: registry.access.redhat.com/ubi9/skopeo@sha256:d077e35100d6d7b3795f8e3594293dbf8b65c6bc18b909aa555fe56f048b356a
     script: |
       #!/usr/bin/env bash
 
