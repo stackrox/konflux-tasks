@@ -14,7 +14,7 @@
     // We found out about it here (we may want to check that location if the base config gets suddenly moved):
     // https://github.com/enterprise-contract/ec-cli/blob/407847910ad420850385eea1db78e2a2e49c7e25/renovate.json#L1C1-L7C2
 
-    // This tells Renovate to combine all updates in one PR so that we have less PRs to deal with.
+    // This tells Renovate to combine all updates in one PR so that we have fewer PRs to deal with.
     "group:all",
   ],
   "timezone": "Etc/UTC",
@@ -39,7 +39,7 @@
     ],
     "automerge": true,
     // PRs can't be actually automerged because we require approval from CODEOWNERS which Renovate can't bypass,
-    // therefore we set automerge type to branch.
+    // therefore, we set automerge type to branch.
     "automergeType": "branch",
     "automergeStrategy": "squash",
     // Tell Renovate that it can automerge branches at any time of the day.
