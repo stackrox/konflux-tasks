@@ -7,23 +7,18 @@ metadata:
     build.appstudio.redhat.com/pull_request_number: '{{pull_request_number}}'
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/max-keep-runs: "500"
-    # The on-push filter includes konflux/* branches which are created by Mintmaker so that CI runs for commits pushed
-    # onto these branches even without PRs and so that Mintmaker/Renovate can automerge its updates without PRs.
     pipelinesascode.tekton.dev/on-cel-expression: |
       (event == "push" && target_branch.matches("^(main|konflux/references/main|konflux/mintmaker/.*)$")) ||
       (event == "pull_request")
-  creationTimestamp:
+  creationTimestamp: null
   labels:
     appstudio.openshift.io/application: acs-konflux-tasks
     appstudio.openshift.io/component: acs-konflux-tasks
     pipelines.appstudio.openshift.io/type: build
   name: acs-konflux-tasks-on-push
   namespace: rh-acs-tenant
-
 spec:
-
   params:
-
   - name: git-url
     value: '{{source_url}}'
   - name: revision
@@ -40,19 +35,43 @@ spec:
     value: "true"
   - name: path-context
     value: tasks
-
-  workspaces:
-  - name: git-auth
-    secret:
-      secretName: '{{ git_auth_secret }}'
-
-  timeouts:
-    tasks: 15m
-    # Reserve time for final tasks to run.
-    finally: 10m
-    pipeline: 25m
-
   pipelineSpec:
+    finally:
+    - name: slack-notification
+      params:
+      - name: message
+        value: ':x: `{{event_type}}` pipeline for <https://console.redhat.com/application-pipeline/workspaces/rh-acs/applications/acs-konflux-tasks/pipelineruns/$(context.pipelineRun.name)|$(context.pipelineRun.name)>
+          (`$(params.output-image-repo)`, revision <$(params.git-url)/commit/$(params.revision)|$(params.revision)>)
+          has failed.'
+      - name: key-name
+        value: acs-konflux-notifications
+      taskRef:
+        params:
+        - name: name
+          value: slack-webhook-notification
+        - name: bundle
+          value: quay.io/konflux-ci/tekton-catalog/task-slack-webhook-notification:0.1@sha256:452188df385218d0a1d9d097ff5daa67f11ae3597c917a3c2bb644787453a8e0
+        - name: kind
+          value: task
+        resolver: bundles
+      when:
+      - input: $(tasks.status)
+        operator: in
+        values:
+        - Failed
+    - name: show-sbom
+      params:
+      - name: IMAGE_URL
+        value: $(tasks.build-container.results.IMAGE_URL)
+      taskRef:
+        params:
+        - name: name
+          value: show-sbom
+        - name: bundle
+          value: quay.io/konflux-ci/tekton-catalog/task-show-sbom:0.1@sha256:002f7c8c1d2f9e09904035da414aba1188ae091df0ea9532cd997be05e73d594
+        - name: kind
+          value: task
+        resolver: bundles
     params:
     - description: Source Repository URL
       name: git-url
@@ -71,7 +90,8 @@ spec:
       name: output-trust-data-repo
       type: string
     - default: .
-      description: Path to the source code of an application's component from where to build image.
+      description: Path to the source code of an application's component from where
+        to build image.
       name: path-context
       type: string
     - default: "false"
@@ -90,11 +110,11 @@ spec:
       description: Build a source image.
       name: build-source-image
       type: string
-    - default: "1d"
-      description: This sets the expiration time for intermediate OCI artifacts produced and used during builds after which they can be garbage collected.
+    - default: 1d
+      description: This sets the expiration time for intermediate OCI artifacts produced
+        and used during builds after which they can be garbage collected.
       name: oci-artifact-expires-after
       type: string
-
     results:
     - description: ""
       name: IMAGE_URL
@@ -114,49 +134,7 @@ spec:
     - description: Bundle contents
       name: BUNDLE_CONTENTS
       value: $(tasks.get-bundle-info.results.BUNDLE_CONTENTS)
-
-    workspaces:
-    - name: git-auth
-
-    finally:
-
-    - name: slack-notification
-      params:
-      - name: message
-        value: ':x: `{{event_type}}` pipeline for <https://console.redhat.com/application-pipeline/workspaces/rh-acs/applications/acs-konflux-tasks/pipelineruns/$(context.pipelineRun.name)|$(context.pipelineRun.name)> (`$(params.output-image-repo)`, revision <$(params.git-url)/commit/$(params.revision)|$(params.revision)>) has failed.'
-      - name: key-name
-        value: 'acs-konflux-notifications'
-      when:
-      # Run when any task has Failed
-      - input: $(tasks.status)
-        operator: in
-        values: ["Failed"]
-      taskRef:
-        params:
-        - name: name
-          value: slack-webhook-notification
-        - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-slack-webhook-notification:0.1@sha256:452188df385218d0a1d9d097ff5daa67f11ae3597c917a3c2bb644787453a8e0
-        - name: kind
-          value: task
-        resolver: bundles
-
-    - name: show-sbom
-      params:
-      - name: IMAGE_URL
-        value: $(tasks.build-container.results.IMAGE_URL)
-      taskRef:
-        params:
-        - name: name
-          value: show-sbom
-        - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-show-sbom:0.1@sha256:002f7c8c1d2f9e09904035da414aba1188ae091df0ea9532cd997be05e73d594
-        - name: kind
-          value: task
-        resolver: bundles
-
     tasks:
-
     - name: init
       params:
       - name: image-url
@@ -174,7 +152,6 @@ spec:
         - name: kind
           value: task
         resolver: bundles
-
     - name: clone-repository
       params:
       - name: url
@@ -197,11 +174,11 @@ spec:
       when:
       - input: $(tasks.init.results.build)
         operator: in
-        values: ["true"]
+        values:
+        - "true"
       workspaces:
       - name: basic-auth
         workspace: git-auth
-
     - name: prefetch-dependencies
       params:
       - name: input
@@ -224,7 +201,6 @@ spec:
       workspaces:
       - name: git-basic-auth
         workspace: git-auth
-
     - name: build-container
       params:
       - name: IMAGE
@@ -237,7 +213,7 @@ spec:
         value: '{{source_url}}'
       - name: REVISION
         value: '{{revision}}'
-      retries: 3 # To aid sporadic failures between tkn CLI and Quay.
+      retries: 3
       taskRef:
         params:
         - name: name
@@ -250,8 +226,8 @@ spec:
       when:
       - input: $(tasks.init.results.build)
         operator: in
-        values: ["true"]
-
+        values:
+        - "true"
     - name: build-source-image
       params:
       - name: BINARY_IMAGE
@@ -272,11 +248,12 @@ spec:
       when:
       - input: $(tasks.init.results.build)
         operator: in
-        values: ["true"]
+        values:
+        - "true"
       - input: $(params.build-source-image)
         operator: in
-        values: ["true"]
-
+        values:
+        - "true"
     - name: clair-scan
       params:
       - name: image-digest
@@ -295,8 +272,8 @@ spec:
       when:
       - input: $(params.skip-checks)
         operator: in
-        values: ["false"]
-
+        values:
+        - "false"
     - name: sast-snyk-check
       params:
       - name: image-digest
@@ -319,8 +296,8 @@ spec:
       when:
       - input: $(params.skip-checks)
         operator: in
-        values: ["false"]
-
+        values:
+        - "false"
     - name: clamav-scan
       params:
       - name: image-digest
@@ -339,8 +316,8 @@ spec:
       when:
       - input: $(params.skip-checks)
         operator: in
-        values: ["false"]
-
+        values:
+        - "false"
     - name: sast-coverity-check
       params:
       - name: image-url
@@ -371,11 +348,12 @@ spec:
       when:
       - input: $(params.skip-checks)
         operator: in
-        values: ["false"]
+        values:
+        - "false"
       - input: $(tasks.coverity-availability-check.results.STATUS)
         operator: in
-        values: [success]
-
+        values:
+        - success
     - name: coverity-availability-check
       params:
       - name: image-digest
@@ -394,8 +372,8 @@ spec:
       when:
       - input: $(params.skip-checks)
         operator: in
-        values: ["false"]
-
+        values:
+        - "false"
     - name: sast-shell-check
       params:
       - name: image-digest
@@ -418,8 +396,8 @@ spec:
       when:
       - input: $(params.skip-checks)
         operator: in
-        values: ["false"]
-
+        values:
+        - "false"
     - name: sast-unicode-check
       params:
       - name: image-url
@@ -440,17 +418,19 @@ spec:
       when:
       - input: $(params.skip-checks)
         operator: in
-        values: ["false"]
-
-    - name: get-floating-tag
-      description: Determines a floating tag that should be applied to the resulting images.
+        values:
+        - "false"
+    - description: Determines a floating tag that should be applied to the resulting
+        images.
+      name: get-floating-tag
       taskSpec:
+        metadata: {}
         results:
-        - name: FLOATING_TAG
-          description: Floating tag to apply to the resulting images.
+        - description: Floating tag to apply to the resulting images.
+          name: FLOATING_TAG
+        spec: null
         steps:
-        - name: get-floating-tag
-          image: registry.redhat.io/ubi9-minimal:latest@sha256:e1c4703364c5cb58f5462575dc90345bcd934ddc45e6c32f9c162f2b5617681c
+        - computeResources: {}
           env:
           - name: EVENT_TYPE
             value: '{{event_type}}'
@@ -458,6 +438,8 @@ spec:
             value: '{{source_branch}}'
           - name: PULL_REQUEST_NUMBER
             value: '{{pull_request_number}}'
+          image: registry.redhat.io/ubi9-minimal:latest@sha256:e1c4703364c5cb58f5462575dc90345bcd934ddc45e6c32f9c162f2b5617681c
+          name: get-floating-tag
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
@@ -472,13 +454,13 @@ spec:
             fi
 
             echo -n "${floating_tag}" | tee "$(results.FLOATING_TAG.path)"
-
     - name: apply-tags
       params:
       - name: IMAGE
         value: $(tasks.build-container.results.IMAGE_URL)
       - name: ADDITIONAL_TAGS
-        value: [$(tasks.get-floating-tag.results.FLOATING_TAG)]
+        value:
+        - $(tasks.get-floating-tag.results.FLOATING_TAG)
       taskRef:
         params:
         - name: name
@@ -488,7 +470,6 @@ spec:
         - name: kind
           value: task
         resolver: bundles
-
     - name: rpms-signature-scan
       params:
       - name: image-url
@@ -507,26 +488,28 @@ spec:
       when:
       - input: $(params.skip-checks)
         operator: in
-        values: ["false"]
-
-    - name: get-bundle-info
-      description: Prints info about the built tasks bundle.
+        values:
+        - "false"
+    - description: Prints info about the built tasks bundle.
+      name: get-bundle-info
       params:
       - name: BUNDLE_REF
         value: $(params.output-image-repo):$(tasks.get-floating-tag.results.FLOATING_TAG)@$(tasks.build-container.results.IMAGE_DIGEST)
       runAfter:
-      # Explicit dependency on `apply-tags` because the FLOATING_TAG is actually applied there.
       - apply-tags
       taskSpec:
+        metadata: {}
         params:
         - name: BUNDLE_REF
           type: string
         results:
         - name: BUNDLE_REF
         - name: BUNDLE_CONTENTS
+        spec: null
         steps:
-        - name: get-bundle-info
+        - computeResources: {}
           image: quay.io/konflux-ci/appstudio-utils:latest@sha256:287d84fe2b03c356fcc27a89ba857bd8911ff44d1f67a91a6b4e2d8f62d98616
+          name: get-bundle-info
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
@@ -541,9 +524,8 @@ spec:
             echo
             echo "Bundle contents:"
             tkn bundle list "$(params.BUNDLE_REF)" | tee "$(results.BUNDLE_CONTENTS.path)"
-
-    - name: update-tasks-trust
-      description: Updates the image which allows to trust built tasks in EC.
+    - description: Updates the image which allows to trust built tasks in EC.
+      name: update-tasks-trust
       params:
       - name: BUNDLE_REF
         value: $(tasks.get-bundle-info.results.BUNDLE_REF)
@@ -552,6 +534,7 @@ spec:
       - name: TRUST_IMAGE_TAG
         value: $(tasks.get-floating-tag.results.FLOATING_TAG)
       taskSpec:
+        metadata: {}
         params:
         - name: BUNDLE_REF
           type: string
@@ -559,9 +542,11 @@ spec:
           type: string
         - name: TRUST_IMAGE_TAG
           type: string
+        spec: null
         steps:
-        - name: update-tasks-trust
+        - computeResources: {}
           image: quay.io/konflux-ci/appstudio-utils:latest@sha256:287d84fe2b03c356fcc27a89ba857bd8911ff44d1f67a91a6b4e2d8f62d98616
+          name: update-tasks-trust
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
@@ -611,3 +596,16 @@ spec:
             fi
 
             echo ">>> Done"
+    workspaces:
+    - name: git-auth
+  taskRunTemplate:
+    serviceAccountName: build-pipeline-acs-konflux-tasks
+  timeouts:
+    finally: 10m0s
+    pipeline: 25m0s
+    tasks: 15m0s
+  workspaces:
+  - name: git-auth
+    secret:
+      secretName: '{{ git_auth_secret }}'
+status: {}
