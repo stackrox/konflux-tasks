@@ -46,6 +46,9 @@ spec:
     secret:
       secretName: '{{ git_auth_secret }}'
 
+  taskRunTemplate:
+    serviceAccountName: build-pipeline-acs-konflux-tasks
+
   timeouts:
     tasks: 15m
     # Reserve time for final tasks to run.
