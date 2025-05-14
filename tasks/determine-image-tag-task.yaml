@@ -89,7 +89,8 @@ spec:
         if [[ "${SOURCE_BRANCH}" == refs/tags/* ]]; then
           tag_from_tekton="${SOURCE_BRANCH#refs/tags/}"
         fi
-        log "Tag from Tekton event: '${tag_from_tekton}'"
+        log "Source branch as reported by Tekton: '${SOURCE_BRANCH}'"
+        log "Tag from Tekton: '${tag_from_tekton}'"
 
         local tag_from_makefile
         tag_from_makefile="$(make -C "$(params.MAKEFILE_DIRECTORY)" --quiet --no-print-directory tag)"
