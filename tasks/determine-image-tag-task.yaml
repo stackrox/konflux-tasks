@@ -16,11 +16,6 @@ spec:
     description: Directory in which to run 'make' command.
     type: string
     default: "."
-  - name: SOURCE_BRANCH
-    description: Branch (or tag) that triggered a build pipeline with this task.
-      Must be set to '{{ source_branch }}' Pipelines as Code variable.
-      See https://pipelinesascode.com/docs/guide/authoringprs/#dynamic-variables
-    type: string
   results:
   - name: IMAGE_TAG
     description: Image Tag determined by the custom logic.
@@ -45,6 +40,11 @@ spec:
   - name: determine-image-tag
     image: registry.access.redhat.com/ubi9:latest@sha256:304b50df1ea4db9706d8a30f4bbf26f582936ebc80c7e075c72ff2af99292a54
     workingDir: /var/workdir/source
+    env:
+    - name: SOURCE_BRANCH
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.annotations['pipelinesascode.tekton.dev/source-branch']
     script: |
       #!/usr/bin/env bash
 
@@ -56,7 +56,6 @@ spec:
         fail_build_if_git_is_dirty
 
         local -r suffix="$(params.TAG_SUFFIX)"
-        local -r source_branch="$(params.SOURCE_BRANCH)"
 
         local image_tag
         image_tag="$(determine_tag)"
@@ -87,10 +86,11 @@ spec:
         # 1. Gather data
 
         local tag_from_tekton=""
-        if [[ "${source_branch}" == refs/tags/* ]]; then
-          tag_from_tekton="${source_branch#refs/tags/}"
+        if [[ "${SOURCE_BRANCH}" == refs/tags/* ]]; then
+          tag_from_tekton="${SOURCE_BRANCH#refs/tags/}"
         fi
-        log "Tag from Tekton event: '${tag_from_tekton}'"
+        log "Source branch as reported by Tekton: '${SOURCE_BRANCH}'"
+        log "Tag from Tekton: '${tag_from_tekton}'"
 
         local tag_from_makefile
         tag_from_makefile="$(make -C "$(params.MAKEFILE_DIRECTORY)" --quiet --no-print-directory tag)"
