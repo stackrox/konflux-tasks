@@ -186,7 +186,7 @@ spec:
 
       # Differentiate stackrox/stackrox repo from stackrox/collector, stackrox/scanner and others.
       function is_stackrox_repo() {
-        if [[ "$(params.REPO_URL)" == "https://github.com/stackrox/stackrox" ]]; then
+        if [[ "${REPO_URL}" == "https://github.com/stackrox/stackrox" ]]; then
           echo "yes"
         else
           echo "no"
