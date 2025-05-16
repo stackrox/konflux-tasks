@@ -41,10 +41,10 @@ spec:
     image: registry.access.redhat.com/ubi9:latest@sha256:304b50df1ea4db9706d8a30f4bbf26f582936ebc80c7e075c72ff2af99292a54
     workingDir: /var/workdir/source
     env:
-    - name: SOURCE_BRANCH
+    - name: TARGET_BRANCH
       valueFrom:
         fieldRef:
-          fieldPath: metadata.annotations['pipelinesascode.tekton.dev/source-branch']
+          fieldPath: metadata.annotations['pipelinesascode.tekton.dev/branch']
     script: |
       #!/usr/bin/env bash
 
@@ -86,10 +86,10 @@ spec:
         # 1. Gather data
 
         local tag_from_tekton=""
-        if [[ "${SOURCE_BRANCH}" == refs/tags/* ]]; then
-          tag_from_tekton="${SOURCE_BRANCH#refs/tags/}"
+        if [[ "${TARGET_BRANCH}" == refs/tags/* ]]; then
+          tag_from_tekton="${TARGET_BRANCH#refs/tags/}"
         fi
-        log "Source branch as reported by Tekton: '${SOURCE_BRANCH}'"
+        log "Target branch as reported by Tekton: '${TARGET_BRANCH}'"
         log "Tag from Tekton: '${tag_from_tekton}'"
 
         local tag_from_makefile
