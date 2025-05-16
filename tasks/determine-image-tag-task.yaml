@@ -45,6 +45,11 @@ spec:
       valueFrom:
         fieldRef:
           fieldPath: metadata.annotations['pipelinesascode.tekton.dev/branch']
+    - name: REPO_URL
+      # E.g. "https://github.com/stackrox/stackrox"
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.annotations['pipelinesascode.tekton.dev/repo-url']
     script: |
       #!/usr/bin/env bash
 
@@ -151,13 +156,13 @@ spec:
         return
       }
 
-      # A poor-man's way to differentiate stackrox/stackrox repo from stackrox/collector, stackrox/scanner and others.
+      # Differentiate stackrox/stackrox repo from stackrox/collector, stackrox/scanner and others.
       function is_stackrox_repo() {
-        result="no"
-        if git remote -v | grep -qE '(\b)stackrox/stackrox(\b)'; then
-          result="yes"
+        if [[ "${REPO_URL}" == "https://github.com/stackrox/stackrox" ]]; then
+          echo "yes"
+        else
+          echo "no"
         fi
-        echo "${result}"
       }
 
       main
