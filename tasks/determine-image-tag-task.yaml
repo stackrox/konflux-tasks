@@ -17,11 +17,6 @@ spec:
     description: Directory in which to run 'make' command.
     type: string
     default: "."
-  - name: ENABLE_SUFFIX_SUPPRESSION
-    description: Passing "true" will suppress (not output) TAG_SUFFIX in the tag in case it's a stackrox/stackrox repo
-      and it's a release or RC tag, a release branch, or a PR to the release branch.
-    type: string
-    default: "false"
   results:
   - name: IMAGE_TAG
     description: Image Tag determined by the custom logic.
@@ -165,7 +160,7 @@ spec:
       function determine_tag_suffix() {
         local -r suffix_param="$(params.TAG_SUFFIX)"
 
-        if [[ "${stackrox_repo}" == "no" ]]; then
+        if [[ "$(is_stackrox_repo)" == "no" ]]; then
           log "This is not a StackRox repo, tag suffix will be: '${suffix_param}'."
           echo "${suffix_param}"
           return
@@ -173,24 +168,19 @@ spec:
 
         local -r script="scripts/ci/should-konflux-replace-gha-build.sh"
 
-        log "Checking if ${script} thinks Konflux build should replace GHA build."
+        log "Checking if ${script} thinks the Konflux build should replace the GHA build."
         local answer
         answer="$( "${script}" )"
+        log "Script's answer: '${answer}'"
 
-        if [[ "${answer}" == "BUILD_AND_PUSH_BOTH" ]]; then
-          log "Script thinks tag suffix '${suffix_param}' should be kept."
-          echo "${suffix_param}"
+        if [[ "${answer}" == "BUILD_AND_PUSH_ONLY_KONFLUX" ]]; then
+          log "Tag suffix will be suppressed."
+          echo ""
           return
         fi
 
-        if [[ "$(params.ENABLE_SUFFIX_SUPPRESSION)" != "true" ]]; then
-          log "Script thinks tag suffix should be suppressed, but this is disabled by this task's ENABLE_SUFFIX_SUPPRESSION param. Will return '${suffix_param}'."
-          echo "${suffix_param}"
-          return
-        fi
-
-        log "Script wants tag suffix be suppressed. Suppressing it."
-        echo ""
+        log "Tag suffix '${suffix_param}' will be kept."
+        echo "${suffix_param}"
         return
       }
 
@@ -205,7 +195,7 @@ spec:
 
       # Log to stderr so not to mess up the stdout result for any function which would use it.
       function log() {
-        >&2 echo "$@"
+        >&2 echo ">>>" "$@"
       }
 
       main
