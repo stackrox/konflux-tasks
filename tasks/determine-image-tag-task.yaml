@@ -3,10 +3,11 @@ kind: Task
 metadata:
   name: determine-image-tag
 spec:
-  description: Determines the tag for the output image using the StackRox convention from 'make tag' output.
+  description: Determines the tag for the output image using the StackRox conventions.
+    For development builds the tag comes from the output of 'make tag' command.
   params:
   - name: TAG_SUFFIX
-    description: Suffix to append to generated image tag.
+    description: Suffix to append to generated image tag. This suffix may be ignored under certain conditions.
     type: string
   - name: SOURCE_ARTIFACT
     description: The Trusted Artifact URI pointing to the artifact with the application source code. This should be the
@@ -41,6 +42,10 @@ spec:
     image: registry.access.redhat.com/ubi9:latest@sha256:304b50df1ea4db9706d8a30f4bbf26f582936ebc80c7e075c72ff2af99292a54
     workingDir: /var/workdir/source
     env:
+    - name: SOURCE_BRANCH
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.annotations['pipelinesascode.tekton.dev/source-branch']
     - name: TARGET_BRANCH
       valueFrom:
         fieldRef:
@@ -60,10 +65,11 @@ spec:
 
         fail_build_if_git_is_dirty
 
-        local -r suffix="$(params.TAG_SUFFIX)"
-
         local image_tag
         image_tag="$(determine_tag)"
+
+        local suffix
+        suffix="$(determine_tag_suffix)"
 
         echo -n "${image_tag}${suffix}" | tee "$(results.IMAGE_TAG.path)"
       }
@@ -83,11 +89,6 @@ spec:
       }
 
       function determine_tag() {
-        function log() {
-          # Log to stderr so not to mess up the function's printed result.
-          >&2 echo "$@"
-        }
-
         # 1. Gather data
 
         local tag_from_tekton=""
@@ -156,6 +157,33 @@ spec:
         return
       }
 
+      function determine_tag_suffix() {
+        local -r suffix_param="$(params.TAG_SUFFIX)"
+
+        if [[ "$(is_stackrox_repo)" == "no" ]]; then
+          log "This is not a StackRox repo, tag suffix will be: '${suffix_param}'."
+          echo "${suffix_param}"
+          return
+        fi
+
+        local -r script="scripts/ci/should-konflux-replace-gha-build.sh"
+
+        log "Checking if ${script} thinks the Konflux build should replace the GHA build."
+        local answer
+        answer="$( "${script}" )"
+        log "Script's answer: '${answer}'"
+
+        if [[ "${answer}" == "BUILD_AND_PUSH_ONLY_KONFLUX" ]]; then
+          log "Tag suffix will be suppressed."
+          echo ""
+          return
+        fi
+
+        log "Tag suffix '${suffix_param}' will be kept."
+        echo "${suffix_param}"
+        return
+      }
+
       # Differentiate stackrox/stackrox repo from stackrox/collector, stackrox/scanner and others.
       function is_stackrox_repo() {
         if [[ "${REPO_URL}" == "https://github.com/stackrox/stackrox" ]]; then
@@ -163,6 +191,11 @@ spec:
         else
           echo "no"
         fi
+      }
+
+      # Log to stderr so not to mess up the stdout result for any function which would use this function.
+      function log() {
+        >&2 echo ">>>" "$@"
       }
 
       main
