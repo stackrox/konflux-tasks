@@ -477,27 +477,32 @@ spec:
             echo -n "${floating_tag}" | tee "$(results.FLOATING_TAG.path)"
 
     - name: generate-unique-tag
-      # todo: why?
-      params:
-      - name: label-templates
-        value:
-        - $(params.output-image-tag)-should-persist-$ACTUAL_DATE_EPOCH
-      taskRef:
-        params:
-        - name: name
-          value: generate-labels
-        - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-generate-labels:0.1@sha256:b4c4f74d891d92b6715e86132889a51d142875ed3a565567e8167fdc4af1b360
-        - name: kind
-          value: task
-        resolver: bundles
+      description: Generates a unique tag to apply to the resulting images.
+        Both $(params.output-image-tag) and $(tasks.get-floating-tag.results.FLOATING_TAG) are practically floating tags
+        and will be moved when the pipeline gets re-triggered for the same commit or runs for subsequent commits
+        (respectively). Once they both get moved and there's no more tag pointing at this image, Quay will
+        garbage collect it. This creates a problem for images built for master if they happen to get used in any of the
+        repos - builds in these repos will fail once the image is gone. Therefore, this task generates a unique image
+        tag for each build which won't get moved and so Quay will keep the image. There's ROX-27836 to prevent garbage
+        piling up.
+      taskSpec:
+        results:
+        - name: UNIQUE_TAG
+          description: Unique tag to apply to the resulting images.
+        steps:
+        - name: generate-unique-tag
+          image: registry.redhat.io/ubi9-minimal:latest@sha256:92b1d5747a93608b6adb64dfd54515c3c5a360802db4706765ff3d8470df6290
+          script: |
+            #!/usr/bin/env bash
+            set -euo pipefail
+            echo -n "$(params.output-image-tag)-should-persist-$( date +%Y-%m-%d-%H-%M-%S.%N )" | tee "$(results.UNIQUE_TAG.path)"
 
     - name: apply-tags
       params:
       - name: IMAGE
         value: $(tasks.build-container.results.IMAGE_URL)
       - name: ADDITIONAL_TAGS
-        value: [$(tasks.get-floating-tag.results.FLOATING_TAG), "$(tasks.generate-unique-tag.results.labels[*])"]
+        value: [ $(tasks.get-floating-tag.results.FLOATING_TAG), $(tasks.generate-unique-tag.results.UNIQUE_TAG) ]
       taskRef:
         params:
         - name: name
@@ -630,3 +635,22 @@ spec:
             fi
 
             echo ">>> Done"
+
+    - name: apply-tags-trust
+      params:
+      - name: IMAGE
+        value: $(params.output-trust-data-repo):$(tasks.get-floating-tag.results.FLOATING_TAG)
+      - name: ADDITIONAL_TAGS
+        value: [ $(tasks.generate-unique-tag.results.UNIQUE_TAG) ]
+      runAfter:
+      # Explicit dependency on `update-tasks-trust` because that one pushes the image.
+      - update-tasks-trust
+      taskRef:
+        params:
+        - name: name
+          value: apply-tags
+        - name: bundle
+          value: quay.io/konflux-ci/tekton-catalog/task-apply-tags:0.1@sha256:9d9871143ab3a818f681488be6074f5b2f892c1843795a46f6daf3f5487e72d1
+        - name: kind
+          value: task
+        resolver: bundles
