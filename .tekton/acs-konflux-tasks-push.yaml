@@ -447,6 +447,7 @@ spec:
 
     - name: get-floating-tag
       description: Determines a floating tag that should be applied to the resulting images.
+        The tasks image should be referenced by this floating tag in the Tekton pipelines which use it.
       taskSpec:
         results:
         - name: FLOATING_TAG
@@ -481,10 +482,10 @@ spec:
         Both $(params.output-image-tag) and $(tasks.get-floating-tag.results.FLOATING_TAG) are practically floating tags
         and will be moved when the pipeline gets re-triggered for the same commit or runs for subsequent commits
         (respectively). Once they both get moved and there's no more tag pointing at this image, Quay will
-        garbage collect it. This creates a problem for images built for master if they happen to get used in any of the
-        repos - builds in these repos will fail once the image is gone. Therefore, this task generates a unique image
-        tag for each build which won't get moved and so Quay will keep the image. There's ROX-27836 to prevent garbage
-        piling up.
+        garbage collect it. This creates a problem for images built in the main branch if they happen to get used in any
+        of the repos - builds in these repos will fail once the image is gone. Therefore, this task generates a unique
+        image tag for each build which won't get moved and so Quay will keep the image. There's ROX-27836 to prevent
+        garbage piling up.
       taskSpec:
         results:
         - name: UNIQUE_TAG
@@ -643,7 +644,7 @@ spec:
       - name: ADDITIONAL_TAGS
         value: [ $(tasks.generate-unique-tag.results.UNIQUE_TAG) ]
       runAfter:
-      # Explicit dependency on `update-tasks-trust` because that one pushes the image.
+      # Explicit dependency on `update-tasks-trust` because that one pushes the trust image.
       - update-tasks-trust
       taskRef:
         params:
