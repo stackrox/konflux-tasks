@@ -447,7 +447,7 @@ spec:
 
     - name: get-floating-tag
       description: Determines a floating tag that should be applied to the resulting images.
-        The tasks image should be referenced by this floating tag in the Tekton pipelines which use it.
+        The tasks image should be referenced by this floating tag and digest in the Tekton pipelines which use it.
       taskSpec:
         results:
         - name: FLOATING_TAG
