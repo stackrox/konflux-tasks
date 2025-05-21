@@ -476,12 +476,28 @@ spec:
 
             echo -n "${floating_tag}" | tee "$(results.FLOATING_TAG.path)"
 
+    - name: generate-unique-tag
+      # todo: why?
+      params:
+      - name: label-templates
+        value:
+        - $(params.output-image-tag)-should-persist-$ACTUAL_DATE_EPOCH
+      taskRef:
+        params:
+        - name: name
+          value: generate-labels
+        - name: bundle
+          value: quay.io/konflux-ci/tekton-catalog/task-generate-labels:0.1@sha256:b4c4f74d891d92b6715e86132889a51d142875ed3a565567e8167fdc4af1b360
+        - name: kind
+          value: task
+        resolver: bundles
+
     - name: apply-tags
       params:
       - name: IMAGE
         value: $(tasks.build-container.results.IMAGE_URL)
       - name: ADDITIONAL_TAGS
-        value: [$(tasks.get-floating-tag.results.FLOATING_TAG)]
+        value: [$(tasks.get-floating-tag.results.FLOATING_TAG), "$(tasks.generate-unique-tag.results.labels[*])"]
       taskRef:
         params:
         - name: name
