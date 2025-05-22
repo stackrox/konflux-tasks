@@ -48,10 +48,11 @@ spec:
 
       local is_retest_tagged_build="no"
       if [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" ]]; then
-        echo "This is a retested buid, checking if tagged."
+        echo "This is a retested build, checking if tagged."
         dnf -y install git
 
         if [ "$(git tag --points-at | wc -l)" -gt 0 ]; then
+          echo "This is retested pipelinerun of a tagged build"
           is_retest_tagged_build="yes"
         fi
       fi
