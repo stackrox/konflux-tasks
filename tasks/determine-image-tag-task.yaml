@@ -46,7 +46,7 @@ spec:
     image: registry.access.redhat.com/ubi9:latest@sha256:304b50df1ea4db9706d8a30f4bbf26f582936ebc80c7e075c72ff2af99292a54
     workingDir: /var/workdir/source
     env:
-    - name: EVENT_TYPE
+    - name: PIPELINE_EVENT_TYPE
       valueFrom:
         fieldRef:
           fieldPath: metadata.labels['pipelinesascode.tekton.dev/event-type']
@@ -129,7 +129,7 @@ spec:
           return
         fi
 
-        if [[ "${EVENT_TYPE}" == "retest-comment" ]]; then
+        if [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" ]]; then
           log "This seems to be a retest of a pipeline run, checking if this is for a tagged build."
           if [ "${#tags_from_git_arr[@]}" -gt 0 ]; then
             log "This seems to be a re-run of a tagged build, using the first tag ${tags_from_git_arr[0]}."
