@@ -45,6 +45,11 @@ spec:
   - name: determine-image-tag
     image: registry.access.redhat.com/ubi9:latest@sha256:304b50df1ea4db9706d8a30f4bbf26f582936ebc80c7e075c72ff2af99292a54
     workingDir: /var/workdir/source
+    env:
+    - name: EVENT_TYPE
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['pipelinesascode.tekton.dev/event-type']
     script: |
       #!/usr/bin/env bash
 
@@ -84,6 +89,21 @@ spec:
           >&2 echo "$@"
         }
 
+        # Retested tagged builds should use first tag that they see.
+        if [[ "${EVENT_TYPE}" == "retest-comment" ]]; then
+          log "Retested pipeline. Testing if this commit is tagged."
+
+          local tags_from_git
+          tags_from_git="$(git tag --points-at)"
+          local -a tags_from_git_arr
+          readarray -t tags_from_git_arr <<< "${tags_from_git}"
+          log "Tags seen by git: '${tags_from_git_arr[*]}'"
+
+          if [ "${#tags_from_git_arr[@]}" -gt 0 ]; then
+
+          fi
+        fi
+
         # 1. Gather data
 
         local tag_from_tekton=""
@@ -122,6 +142,17 @@ spec:
           log "This seems to be a tekton tag push event, using ${tag_from_tekton} for the tag."
           echo "${tag_from_tekton}"
           return
+        fi
+
+        if [[ "${EVENT_TYPE}" == "retest-comment" ]]; then
+          log "This seems to be a retest of a pipeline run, checking if this is for a tagged build."
+          if [ "${#tags_from_git_arr[@]}" -gt 0 ]; then
+            log "This seems to be a re-run of a tagged build, using the first tag ${tags_from_git_arr[0]}."
+            echo "${tags_from_git_arr[0]}"
+            return
+          else
+            log "This is not a tagged build, so continuing with normal logic."
+          fi
         fi
 
         # Handle the special case in the Collector repo.
