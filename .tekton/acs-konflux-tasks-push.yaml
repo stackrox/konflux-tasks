@@ -496,7 +496,7 @@ spec:
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
-            echo -n "$(params.output-image-tag)-should-persist-$( date +%Y-%m-%d-%H-%M-%S.%N )" | tee "$(results.UNIQUE_TAG.path)"
+            echo -n "keep-image-$(params.output-image-tag)-$( date +%Y-%m-%d-%H-%M-%S.%N )" | tee "$(results.UNIQUE_TAG.path)"
 
     - name: apply-tags
       params:
