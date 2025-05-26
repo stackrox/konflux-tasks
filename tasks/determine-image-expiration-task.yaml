@@ -54,7 +54,7 @@ spec:
       echo "Event type: ${PIPELINE_EVENT_TYPE}"
       echo "Target branch: ${PIPELINE_TARGET_BRANCH}"
 
-      local is_retest_tagged_build="no"
+      is_retest_tagged_build="no"
       if [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" ]]; then
         echo "This is a retested build, checking if tagged."
         dnf -y install git
