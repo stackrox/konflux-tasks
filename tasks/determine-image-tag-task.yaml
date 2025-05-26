@@ -137,7 +137,7 @@ spec:
         if [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" ]]; then
           log "This seems to be a retest of a pipeline run, checking if this is for a tagged build."
           tag="$(git tag --points-at | head -n 1)"
-          if [ -n "${tag}" ]; then
+          if [[ -n "${tag}" ]]; then
             log "This seems to be a re-run of a tagged build, using the first tag detected: ${tag}."
             echo "${tag}"
             return
