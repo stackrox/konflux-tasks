@@ -59,7 +59,7 @@ spec:
         echo "This is a retested build, checking if tagged."
         dnf -y install git
 
-        if [ "$(git tag --points-at | wc -l)" -gt 0 ]; then
+        if [ -n "$(git tag --points-at)" ]; then
           echo "This is retested pipelinerun of a tagged build"
           is_retest_tagged_build="yes"
         fi
