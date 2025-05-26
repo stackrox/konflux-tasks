@@ -66,7 +66,7 @@ spec:
       fi
 
       # TODO(ROX-28001): Update the expiration logic for -fast releases.
-      if [[ "${PIPELINE_EVENT_TYPE}" != "pull_request" && (("${PIPELINE_TARGET_BRANCH}" == refs/tags/* && "${PIPELINE_TARGET_BRANCH}" != *-nightly-*) || is_retest_tagged_build == "yes") ]]; then
+      if [[ "${PIPELINE_EVENT_TYPE}" != "pull_request" && (("${PIPELINE_TARGET_BRANCH}" == refs/tags/* && "${PIPELINE_TARGET_BRANCH}" != *-nightly-*) || "${is_retest_tagged_build}" == "yes") ]]; then
         echo "This is a tagged build and not a nightly. The images won't expire. IMAGE_EXPIRES_AFTER will be empty."
         IMAGE_EXPIRES_AFTER=""
       else
