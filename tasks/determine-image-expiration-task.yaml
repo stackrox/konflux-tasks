@@ -15,6 +15,13 @@ spec:
   results:
   - name: IMAGE_EXPIRES_AFTER
     description: Image expiration as a duration, e.g. `13w`.
+  volumes:
+  - name: workdir
+    emptyDir: { }
+  stepTemplate:
+    volumeMounts:
+    - mountPath: /var/workdir
+      name: workdir
   steps:
   - name: use-trusted-artifact
     image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
@@ -37,6 +44,7 @@ spec:
       valueFrom:
         fieldRef:
           fieldPath: metadata.annotations['build.appstudio.redhat.com/target_branch']
+    workingDir: /var/workdir/source
     script: |
       #!/usr/bin/env bash
 
