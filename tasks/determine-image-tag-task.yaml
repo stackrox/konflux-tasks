@@ -172,29 +172,34 @@ spec:
         return
       }
 
+      # determine_tag_suffix omits the image tag suffix for Stable Stream release (and release-like) builds.
       function determine_tag_suffix() {
         local -r suffix_param="$(params.TAG_SUFFIX)"
 
         if [[ "$(is_stackrox_repo)" == "no" ]]; then
-          log "This is not a StackRox repo, tag suffix will be: '${suffix_param}'."
+          log "This is not a StackRox repo, using '${suffix_param}' as the tag suffix."
           echo "${suffix_param}"
           return
         fi
 
-        local -r script="scripts/ci/should-konflux-replace-gha-build.sh"
+        log "Konflux TARGET_BRANCH: ${TARGET_BRANCH}"
+        log "Konflux SOURCE_BRANCH: ${SOURCE_BRANCH}"
 
-        log "Checking if ${script} thinks the Konflux build should replace the GHA build."
-        local answer
-        answer="$( "${script}" )"
-        log "Script's answer: '${answer}'"
+        if [[ "${SOURCE_BRANCH}" == *konflux-release-like* ]]; then
+          log "This looks like a PR branch containing the magic string. The tag suffix is suppressed."
+          echo ""
+          return
+        else
+          log "Did not spot the magic string in the SOURCE_BRANCH."
+        fi
 
-        if [[ "${answer}" == "BUILD_AND_PUSH_ONLY_KONFLUX" ]]; then
-          log "Tag suffix will be suppressed."
+        if grep -qE '^(release-[0-9a-z]+\.[0-9a-z]+|refs/tags/[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?)$' <<< "${TARGET_BRANCH}"; then
+          log "This looks like a release branch or release tag push, or PR targeting the release branch. The tag suffix is suppressed."
           echo ""
           return
         fi
 
-        log "Tag suffix '${suffix_param}' will be kept."
+        log "This does not look like a release branch or release tag push, nor like PR targeting the release branch. Using '${suffix_param}' as the tag suffix."
         echo "${suffix_param}"
         return
       }
