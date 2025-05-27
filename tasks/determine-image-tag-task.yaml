@@ -119,7 +119,7 @@ spec:
         local tags_from_git
         tags_from_git="$(git tag --points-at)"
         local -a tags_from_git_arr
-        readarray -t tags_from_git_arr <<< "${tags_from_git}"
+        readarray -t tags_from_git_arr < <(printf '%s' "$tags_from_git")
         log "Tags seen by git: '${tags_from_git_arr[*]}'"
 
         local git_describe_output
@@ -136,10 +136,9 @@ spec:
 
         if [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" ]]; then
           log "This seems to be a retest of a pipeline run, checking if this is for a tagged build."
-          tag="$(git tag --points-at | head -n 1)"
-          if [[ -n "${tag}" ]]; then
-            log "This seems to be a re-run of a tagged build, using the first tag detected: ${tag}."
-            echo "${tag}"
+          if [[ "${#tags_from_git_arr[*]}" -gt 0 ]]; then
+            log "This seems to be a re-run of a tagged build, using the first tag detected: ${tags_from_git_arr[0]}."
+            echo "${tags_from_git_arr[0]}"
             return
           else
             log "This is not a tagged build, so continuing with normal logic."
