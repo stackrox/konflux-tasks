@@ -34,7 +34,8 @@ spec:
     - use
     - $(params.SOURCE_ARTIFACT)=/var/workdir/source
   - name: determine-image-expiration
-    image: registry.access.redhat.com/ubi9:latest@sha256:304b50df1ea4db9706d8a30f4bbf26f582936ebc80c7e075c72ff2af99292a54
+    # We need git and toolbox image has it.
+    image: registry.access.redhat.com/ubi9/toolbox:latest@sha256:e6df0f2df988f93e27c0dfb959bd116ccf63bca2d07e1a857b970799ac8167f9
     env:
     - name: PIPELINE_EVENT_TYPE
       valueFrom:
@@ -57,8 +58,6 @@ spec:
       is_retest_tagged_build="no"
       if [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" ]]; then
         echo "This is a retested build, checking if tagged."
-        dnf -y install git
-
         if [[ -n "$(git tag --points-at)" ]]; then
           echo "This is retested pipelinerun of a tagged build"
           is_retest_tagged_build="yes"
