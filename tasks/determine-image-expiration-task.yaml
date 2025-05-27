@@ -5,15 +5,37 @@ metadata:
 spec:
   description: Determines the image expiration parameter, or sets to empty for git-tagged builds.
   params:
+  - name: SOURCE_ARTIFACT
+    description: The Trusted Artifact URI pointing to the artifact with the application source code. This should be the
+      result of the git-clone task.
+    type: string
   - name: DEFAULT_IMAGE_EXPIRES_AFTER
     description: Default image expiration.
     type: string
   results:
   - name: IMAGE_EXPIRES_AFTER
     description: Image expiration as a duration, e.g. `13w`.
+  volumes:
+  - name: workdir
+    emptyDir: { }
+  stepTemplate:
+    volumeMounts:
+    - mountPath: /var/workdir
+      name: workdir
   steps:
+  - name: use-trusted-artifact
+    image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+    computeResources:
+      requests:
+        memory: 2Gi
+      limits:
+        memory: 2Gi
+    args:
+    - use
+    - $(params.SOURCE_ARTIFACT)=/var/workdir/source
   - name: determine-image-expiration
-    image: registry.access.redhat.com/ubi9:latest@sha256:304b50df1ea4db9706d8a30f4bbf26f582936ebc80c7e075c72ff2af99292a54
+    # We need git and toolbox image has it.
+    image: registry.access.redhat.com/ubi9/toolbox:latest@sha256:e6df0f2df988f93e27c0dfb959bd116ccf63bca2d07e1a857b970799ac8167f9
     env:
     - name: PIPELINE_EVENT_TYPE
       valueFrom:
@@ -23,6 +45,7 @@ spec:
       valueFrom:
         fieldRef:
           fieldPath: metadata.annotations['build.appstudio.redhat.com/target_branch']
+    workingDir: /var/workdir/source
     script: |
       #!/usr/bin/env bash
 
@@ -32,8 +55,17 @@ spec:
       echo "Event type: ${PIPELINE_EVENT_TYPE}"
       echo "Target branch: ${PIPELINE_TARGET_BRANCH}"
 
+      is_retest_tagged_build="no"
+      if [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" ]]; then
+        echo "This is a retested build, checking if tagged."
+        if [[ -n "$(git tag --points-at)" ]]; then
+          echo "This is retested pipelinerun of a tagged build"
+          is_retest_tagged_build="yes"
+        fi
+      fi
+
       # TODO(ROX-28001): Update the expiration logic for -fast releases.
-      if [[ "${PIPELINE_EVENT_TYPE}" != "pull_request" && "${PIPELINE_TARGET_BRANCH}" == refs/tags/* && "${PIPELINE_TARGET_BRANCH}" != *-nightly-* ]]; then
+      if [[ "${PIPELINE_EVENT_TYPE}" != "pull_request" && (("${PIPELINE_TARGET_BRANCH}" == refs/tags/* && "${PIPELINE_TARGET_BRANCH}" != *-nightly-*) || "${is_retest_tagged_build}" == "yes") ]]; then
         echo "This is a tagged build and not a nightly. The images won't expire. IMAGE_EXPIRES_AFTER will be empty."
         IMAGE_EXPIRES_AFTER=""
       else
