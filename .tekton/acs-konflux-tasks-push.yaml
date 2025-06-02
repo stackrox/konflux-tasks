@@ -472,7 +472,7 @@ spec:
             value: '{{pull_request_number}}'
           script: |
             #!/usr/bin/env bash
-            set -euxo pipefail
+            set -euo pipefail
 
             echo "Event type: ${PIPELINE_EVENT_TYPE}"
             echo "Source branch: ${SOURCE_BRANCH}"
@@ -480,15 +480,12 @@ spec:
             echo "Pull request number: ${PULL_REQUEST_NUMBER}"
 
             if [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" || "${PIPELINE_EVENT_TYPE}" == "retest-all-comment" ]]; then
-              echo "retest"
               if [[ "${SOURCE_BRANCH}" != "${TARGET_BRANCH}" ]]; then
                 # This is a retest of a Pull Request, because SOURCE and TARGET branch are different.
                 # We cannot use PULL_REQUEST_NUMBER here because of templating.
                 # We overwrite the PIPELINE_EVENT_TYPE to "pull_request" and assume we are on a branch build otherwise.
-                echo "a PR"
                 PIPELINE_EVENT_TYPE="pull_request"
               else
-                echo "not a PR"
                 PIPELINE_EVENT_TYPE="push"
               fi
             fi
