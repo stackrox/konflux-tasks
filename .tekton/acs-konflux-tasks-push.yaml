@@ -475,7 +475,7 @@ spec:
             echo "Pull request number: ${PULL_REQUEST_NUMBER}"
 
             if [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" || "${PIPELINE_EVENT_TYPE}" == "retest-all-comment" ]]; then
-              if [[ "${PULL_REQUEST_NUMBER}" == "pull_request_number" ]]; then
+              if [[ "${PULL_REQUEST_NUMBER}" == "{{pull_request_number}}" ]]; then
                 # This is not a retest of a Pull Request, because PULL_REQUEST_NUMBER is not filled.
                 # This must be a branch or tagged build, so we overwrite the PIPELINE_EVENT_TYPE to "push" and continue
                 # with the usual logic.
