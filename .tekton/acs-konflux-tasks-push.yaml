@@ -482,6 +482,7 @@ spec:
                 PIPELINE_EVENT_TYPE="push"
               else
                 PIPELINE_EVENT_TYPE="pull_request"
+              fi
             fi
 
             if [[ "${PIPELINE_EVENT_TYPE}" == "pull_request" ]]; then
