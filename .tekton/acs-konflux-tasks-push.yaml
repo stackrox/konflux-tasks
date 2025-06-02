@@ -474,6 +474,15 @@ spec:
             echo "Target branch: ${SOURCE_BRANCH}"
             echo "Pull request number: ${PULL_REQUEST_NUMBER}"
 
+            if [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" || "${PIPELINE_EVENT_TYPE}" == "retest-all-comment" ]]; then
+              if [[ "${PULL_REQUEST_NUMBER}" == "pull_request_number "]]; then
+                # This is not a retest of a Pull Request, because PULL_REQUEST_NUMBER is not filled.
+                # This must be a branch or tagged build, so we overwrite the PIPELINE_EVENT_TYPE to "push" and continue
+                # with the usual logic.
+                PIPELINE_EVENT_TYPE="push"
+              fi
+            fi
+
             if [[ "${PIPELINE_EVENT_TYPE}" == "push" ]]; then
               floating_tag="$(echo "${SOURCE_BRANCH}" | sed 's/[^a-zA-Z0-9_.]/-/g')"
               if [[ "${SOURCE_BRANCH}" == "main" ]]; then
@@ -481,9 +490,6 @@ spec:
               fi
             elif [[ "${PIPELINE_EVENT_TYPE}" == "pull_request" ]]; then
               floating_tag="pr-${PULL_REQUEST_NUMBER}"
-            elif [[ "$PIPELINE_EVENT_TYPE" == "retest-comment" || "$PIPELINE_EVENT_TYPE" == "retest-all-comment" ]]; then
-              echo "ERROR: Retest comment is not supported"
-              exit 1
             else
               echo "ERROR: Unknown PIPELINE_EVENT_TYPE"
               exit 1
