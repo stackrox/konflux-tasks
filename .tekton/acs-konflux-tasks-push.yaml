@@ -483,16 +483,13 @@ spec:
               fi
             fi
 
-            if [[ "${PIPELINE_EVENT_TYPE}" == "push" ]]; then
+            if [[ "${PIPELINE_EVENT_TYPE}" == "pull_request" ]]; then
+              floating_tag="pr-${PULL_REQUEST_NUMBER}"
+            else
               floating_tag="$(echo "${SOURCE_BRANCH}" | sed 's/[^a-zA-Z0-9_.]/-/g')"
               if [[ "${SOURCE_BRANCH}" == "main" ]]; then
                 floating_tag="latest"
               fi
-            elif [[ "${PIPELINE_EVENT_TYPE}" == "pull_request" ]]; then
-              floating_tag="pr-${PULL_REQUEST_NUMBER}"
-            else
-              echo "ERROR: Unknown PIPELINE_EVENT_TYPE"
-              exit 1
             fi
 
             echo -n "${floating_tag}" | tee "$(results.FLOATING_TAG.path)"
