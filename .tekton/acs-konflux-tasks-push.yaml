@@ -482,7 +482,7 @@ spec:
             if [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" || "${PIPELINE_EVENT_TYPE}" == "retest-all-comment" ]]; then
               if [[ "${SOURCE_BRANCH}" != "${TARGET_BRANCH}" ]]; then
                 # This is a retest of a Pull Request, because SOURCE and TARGET branch are different.
-                # We cannot use PULL_REQUEST_NUMBER here because of templating.
+                # We are comparing those, because it's easier than attempting to detect if PULL_REQUEST_NUMBER is templated or not.
                 # We overwrite the PIPELINE_EVENT_TYPE to "pull_request" and assume we are on a branch build otherwise.
                 PIPELINE_EVENT_TYPE="pull_request"
               else
