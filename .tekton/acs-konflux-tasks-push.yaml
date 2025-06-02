@@ -472,22 +472,20 @@ spec:
             value: '{{pull_request_number}}'
           script: |
             #!/usr/bin/env bash
-            set -euxo pipefail
+            set -euo pipefail
 
             echo "Event type: ${PIPELINE_EVENT_TYPE}"
-            echo "Target branch: ${SOURCE_BRANCH}"
+            echo "Source branch: ${SOURCE_BRANCH}"
+            echo "Target branch: ${TARGET_BRANCH}"
             echo "Pull request number: ${PULL_REQUEST_NUMBER}"
 
             if [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" || "${PIPELINE_EVENT_TYPE}" == "retest-all-comment" ]]; then
-              echo "retest"
               if [[ "${SOURCE_BRANCH}" != "${TARGET_BRANCH}" ]]; then
                 # This is a retest of a Pull Request, because SOURCE and TARGET branch are different.
                 # We cannot use PULL_REQUEST_NUMBER here because of templating.
                 # We overwrite the PIPELINE_EVENT_TYPE to "pull_request" and assume we are on a branch build otherwise.
-                echo "a PR"
                 PIPELINE_EVENT_TYPE="pull_request"
               else
-                echo "not a PR"
                 PIPELINE_EVENT_TYPE="push"
               fi
             fi
@@ -497,8 +495,8 @@ spec:
             if [[ "${PIPELINE_EVENT_TYPE}" == "pull_request" ]]; then
               floating_tag="pr-${PULL_REQUEST_NUMBER}"
             else
-              floating_tag="$(echo "${SOURCE_BRANCH}" | sed 's/[^a-zA-Z0-9_.]/-/g')"
-              if [[ "${SOURCE_BRANCH}" == "main" ]]; then
+              floating_tag="$(echo "${TARGET_BRANCH}" | sed 's/[^a-zA-Z0-9_.]/-/g')"
+              if [[ "${TARGET_BRANCH}" == "main" ]]; then
                 floating_tag="latest"
               fi
             fi
