@@ -456,23 +456,37 @@ spec:
         - name: get-floating-tag
           image: registry.redhat.io/ubi9-minimal:latest@sha256:92b1d5747a93608b6adb64dfd54515c3c5a360802db4706765ff3d8470df6290
           env:
-          - name: EVENT_TYPE
-            value: '{{event_type}}'
+          - name: PIPELINE_EVENT_TYPE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.labels['pipelinesascode.tekton.dev/event-type']
           - name: SOURCE_BRANCH
-            value: '{{source_branch}}'
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.annotations['pipelinesascode.tekton.dev/source-branch']
           - name: PULL_REQUEST_NUMBER
             value: '{{pull_request_number}}'
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
 
-            if [[ "${EVENT_TYPE}" == "pull_request" ]]; then
-              floating_tag="pr-${PULL_REQUEST_NUMBER}"
-            else
+            echo "Event type: ${PIPELINE_EVENT_TYPE}"
+            echo "Target branch: ${SOURCE_BRANCH}"
+            echo "Pull request number: ${PULL_REQUEST_NUMBER}"
+
+            if [[ "${PIPELINE_EVENT_TYPE}" == "push" ]];
               floating_tag="$(echo "${SOURCE_BRANCH}" | sed 's/[^a-zA-Z0-9_.]/-/g')"
               if [[ "${SOURCE_BRANCH}" == "main" ]]; then
                 floating_tag="latest"
               fi
+            elif [[ "${PIPELINE_EVENT_TYPE}" == "pull_request" ]]; then
+              floating_tag="pr-${PULL_REQUEST_NUMBER}"
+            elif [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" ]]; then
+              echo "ERROR: Retest comment is not supported"
+              exit 1
+            else
+              echo "ERROR: Unknown PIPELINE_EVENT_TYPE"
+              exit 1
             fi
 
             echo -n "${floating_tag}" | tee "$(results.FLOATING_TAG.path)"
