@@ -464,6 +464,10 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.annotations['pipelinesascode.tekton.dev/source-branch']
+          - name: TARGET_BRANCH
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.annotations['pipelinesascode.tekton.dev/branch']
           - name: PULL_REQUEST_NUMBER
             value: '{{pull_request_number}}'
           script: |
@@ -475,17 +479,20 @@ spec:
             echo "Pull request number: ${PULL_REQUEST_NUMBER}"
 
             if [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" || "${PIPELINE_EVENT_TYPE}" == "retest-all-comment" ]]; then
-              if [[ "${PULL_REQUEST_NUMBER}" == "{{pull_request_number}}" ]]; then
-                # This is not a retest of a Pull Request, because PULL_REQUEST_NUMBER is not filled.
-                # This must be a branch or tagged build, so we overwrite the PIPELINE_EVENT_TYPE to "push" and continue
-                # with the usual logic.
-                PIPELINE_EVENT_TYPE="push"
-              else
+              echo "retest"
+              if [[ "${SOURCE_BRANCH}" != "${TARGET_BRANCH}" ]]; then
+                # This is a retest of a Pull Request, because SOURCE and TARGET branch are different.
+                # We cannot use PULL_REQUEST_NUMBER here because of templating.
+                # We overwrite the PIPELINE_EVENT_TYPE to "pull_request" and assume we are on a branch build otherwise.
+                echo "a PR"
                 PIPELINE_EVENT_TYPE="pull_request"
+              else
+                echo "not a PR"
+                PIPELINE_EVENT_TYPE="push"
               fi
             fi
 
-            echo "Pipeline Event Type: ${PIPELINE_EVENT_TYPE}"
+            echo "Overriden pipeline event type: ${PIPELINE_EVENT_TYPE}"
 
             if [[ "${PIPELINE_EVENT_TYPE}" == "pull_request" ]]; then
               floating_tag="pr-${PULL_REQUEST_NUMBER}"
