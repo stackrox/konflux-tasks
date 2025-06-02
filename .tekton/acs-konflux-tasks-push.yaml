@@ -480,7 +480,8 @@ spec:
                 # This must be a branch or tagged build, so we overwrite the PIPELINE_EVENT_TYPE to "push" and continue
                 # with the usual logic.
                 PIPELINE_EVENT_TYPE="push"
-              fi
+              else
+                PIPELINE_EVENT_TYPE="pull_request"
             fi
 
             if [[ "${PIPELINE_EVENT_TYPE}" == "pull_request" ]]; then
