@@ -481,7 +481,7 @@ spec:
               fi
             elif [[ "${PIPELINE_EVENT_TYPE}" == "pull_request" ]]; then
               floating_tag="pr-${PULL_REQUEST_NUMBER}"
-            elif [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" ]]; then
+            elif [[ "$PIPELINE_EVENT_TYPE" == "retest-comment" || "$PIPELINE_EVENT_TYPE" == "retest-all-comment" ]]; then
               echo "ERROR: Retest comment is not supported"
               exit 1
             else
