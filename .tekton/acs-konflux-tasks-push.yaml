@@ -468,7 +468,7 @@ spec:
             value: '{{pull_request_number}}'
           script: |
             #!/usr/bin/env bash
-            set -euo pipefail
+            set -euxo pipefail
 
             echo "Event type: ${PIPELINE_EVENT_TYPE}"
             echo "Target branch: ${SOURCE_BRANCH}"
@@ -484,6 +484,8 @@ spec:
                 PIPELINE_EVENT_TYPE="pull_request"
               fi
             fi
+
+            echo "Pipeline Event Type: ${PIPELINE_EVENT_TYPE}"
 
             if [[ "${PIPELINE_EVENT_TYPE}" == "pull_request" ]]; then
               floating_tag="pr-${PULL_REQUEST_NUMBER}"
