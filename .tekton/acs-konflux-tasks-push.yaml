@@ -475,7 +475,8 @@ spec:
             set -euxo pipefail
 
             echo "Event type: ${PIPELINE_EVENT_TYPE}"
-            echo "Target branch: ${SOURCE_BRANCH}"
+            echo "Source branch: ${SOURCE_BRANCH}"
+            echo "Target branch: ${TARGET_BRANCH}"
             echo "Pull request number: ${PULL_REQUEST_NUMBER}"
 
             if [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" || "${PIPELINE_EVENT_TYPE}" == "retest-all-comment" ]]; then
@@ -497,8 +498,8 @@ spec:
             if [[ "${PIPELINE_EVENT_TYPE}" == "pull_request" ]]; then
               floating_tag="pr-${PULL_REQUEST_NUMBER}"
             else
-              floating_tag="$(echo "${SOURCE_BRANCH}" | sed 's/[^a-zA-Z0-9_.]/-/g')"
-              if [[ "${SOURCE_BRANCH}" == "main" ]]; then
+              floating_tag="$(echo "${TARGET_BRANCH}" | sed 's/[^a-zA-Z0-9_.]/-/g')"
+              if [[ "${TARGET_BRANCH}" == "main" ]]; then
                 floating_tag="latest"
               fi
             fi
