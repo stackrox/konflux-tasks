@@ -505,7 +505,7 @@ spec:
                 floating_tag="latest"
               fi
             fi
-
+            exit 1
             echo -n "${floating_tag}" | tee "$(results.FLOATING_TAG.path)"
 
     - name: generate-unique-tag
