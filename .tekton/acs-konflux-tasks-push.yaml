@@ -97,6 +97,10 @@ spec:
       description: This sets the expiration time for intermediate OCI artifacts produced and used during builds after which they can be garbage collected.
       name: oci-artifact-expires-after
       type: string
+    - name: PIPELINE_EVENT_TYPE
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['pipelinesascode.tekton.dev/event-type']
 
     results:
     - description: ""
@@ -126,7 +130,7 @@ spec:
     - name: slack-notification
       params:
       - name: message
-        value: ':x: `{{event_type}}` pipeline for <https://console.redhat.com/application-pipeline/workspaces/rh-acs/applications/acs-konflux-tasks/pipelineruns/$(context.pipelineRun.name)|$(context.pipelineRun.name)> (`$(params.output-image-repo)`, revision <$(params.git-url)/commit/$(params.revision)|$(params.revision)>) has failed.'
+        value: ':x: `$(params.PIPELINE_EVENT_TYPE)` pipeline for <https://console.redhat.com/application-pipeline/workspaces/rh-acs/applications/acs-konflux-tasks/pipelineruns/$(context.pipelineRun.name)|$(context.pipelineRun.name)> (`$(params.output-image-repo)`, revision <$(params.git-url)/commit/$(params.revision)|$(params.revision)>) has failed.'
       - name: key-name
         value: 'acs-konflux-notifications'
       when:
@@ -500,6 +504,7 @@ spec:
                 floating_tag="latest"
               fi
             fi
+            exit 1
 
             echo -n "${floating_tag}" | tee "$(results.FLOATING_TAG.path)"
 
