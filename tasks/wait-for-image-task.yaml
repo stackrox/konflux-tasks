@@ -46,6 +46,25 @@ spec:
         exit 1
       fi
 
+      # Output
       echo -n "${infos[0]}" | tee "$(results.IMAGE_DIGEST.path)"
       echo -n "${infos[1]}" | tee "$(results.GIT_REF.path)"
       echo -n "${infos[2]}" | tee "$(results.GIT_REPO.path)"
+
+  - name: wait-for-attestation
+    image: registry.redhat.io/rhtas/cosign-rhel9:1.2.0-1744791100@sha256:cb53dcc3bc912dd7f12147f33af1b435eae5ff4ab83b85c0277b4004b20a0248
+    script: |
+      #!/usr/bin/env bash
+
+      set -exuo pipefail
+
+      # Wait for the attestation OCI to appear.
+      echo "Waiting for attestation OCI $(params.IMAGE).att to appear..."
+      while true; do
+        if cosign tree "$(params.IMAGE)" | grep -E "quay.io/rhacs-eng/release-.*:sha256-.*\.att$"; then
+          break
+        fi
+        sleep 1m
+      done
+
+      echo "Attestion $(params.IMAGE) found, signalling a successfully finished PipelineRun"
