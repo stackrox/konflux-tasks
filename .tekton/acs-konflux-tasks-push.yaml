@@ -124,9 +124,14 @@ spec:
     finally:
 
     - name: slack-notification
+      env:
+      - name: PIPELINE_EVENT_TYPE
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.labels['pipelinesascode.tekton.dev/event-type']
       params:
       - name: message
-        value: ':x: `{{event_type}}` pipeline for <https://console.redhat.com/application-pipeline/workspaces/rh-acs/applications/acs-konflux-tasks/pipelineruns/$(context.pipelineRun.name)|$(context.pipelineRun.name)> (`$(params.output-image-repo)`, revision <$(params.git-url)/commit/$(params.revision)|$(params.revision)>) has failed.'
+        value: ':x: `${PIPELINE_EVENT_TYPE}` pipeline for <https://console.redhat.com/application-pipeline/workspaces/rh-acs/applications/acs-konflux-tasks/pipelineruns/$(context.pipelineRun.name)|$(context.pipelineRun.name)> (`$(params.output-image-repo)`, revision <$(params.git-url)/commit/$(params.revision)|$(params.revision)>) has failed.'
       - name: key-name
         value: 'acs-konflux-notifications'
       when:
@@ -479,7 +484,7 @@ spec:
             echo "Target branch: ${TARGET_BRANCH}"
             echo "Pull request number: ${PULL_REQUEST_NUMBER}"
 
-            if [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" || "${PIPELINE_EVENT_TYPE}" == "retest-all-comment" ]]; then
+            if [[ "${PIPELINE_EVENT_TYPE}" =~ ^(re)?test-(all-)?comment$ ]]; then
               if [[ "${SOURCE_BRANCH}" != "${TARGET_BRANCH}" ]]; then
                 # This is a retest of a Pull Request, because SOURCE and TARGET branch are different.
                 # We are comparing those, because it's easier than attempting to detect if PULL_REQUEST_NUMBER is templated or not.
