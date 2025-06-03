@@ -56,7 +56,7 @@ spec:
       echo "Target branch: ${PIPELINE_TARGET_BRANCH}"
 
       is_retest_tagged_build="no"
-      if [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" ]]; then
+      if [[ "${PIPELINE_EVENT_TYPE}" =~ ^(re)?test-(all-)?comment$ ]]; then
         echo "This is a retested build, checking if tagged."
         if [[ -n "$(git tag --points-at)" ]]; then
           echo "This is retested pipelinerun of a tagged build"

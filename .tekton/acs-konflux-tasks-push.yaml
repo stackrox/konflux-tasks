@@ -479,7 +479,7 @@ spec:
             echo "Target branch: ${TARGET_BRANCH}"
             echo "Pull request number: ${PULL_REQUEST_NUMBER}"
 
-            if [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" || "${PIPELINE_EVENT_TYPE}" == "retest-all-comment" ]]; then
+            if [[ "${PIPELINE_EVENT_TYPE}" =~ ^(re)?test-(all-)?comment$ ]]; then
               if [[ "${SOURCE_BRANCH}" != "${TARGET_BRANCH}" ]]; then
                 # This is a retest of a Pull Request, because SOURCE and TARGET branch are different.
                 # We are comparing those, because it's easier than attempting to detect if PULL_REQUEST_NUMBER is templated or not.

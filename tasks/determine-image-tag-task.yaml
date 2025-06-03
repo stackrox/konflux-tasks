@@ -134,7 +134,7 @@ spec:
           return
         fi
 
-        if [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" ]]; then
+        if [[ "${PIPELINE_EVENT_TYPE}" =~ ^(re)?test-(all-)?comment$ ]]; then
           log "This seems to be a retest of a pipeline run, checking if this is for a tagged build."
           if [[ "${#tags_from_git_arr[*]}" -gt 0 ]]; then
             log "This seems to be a re-run of a tagged build, using the first tag detected: ${tags_from_git_arr[0]}."
