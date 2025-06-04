@@ -456,17 +456,25 @@ spec:
         - name: get-floating-tag
           image: registry.redhat.io/ubi9-minimal:latest@sha256:92b1d5747a93608b6adb64dfd54515c3c5a360802db4706765ff3d8470df6290
           env:
-          - name: EVENT_TYPE
-            value: '{{event_type}}'
           - name: SOURCE_BRANCH
-            value: '{{source_branch}}'
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.annotations['pipelinesascode.tekton.dev/source-branch']
+          - name: TARGET_BRANCH
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.annotations['pipelinesascode.tekton.dev/branch']
           - name: PULL_REQUEST_NUMBER
             value: '{{pull_request_number}}'
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
 
-            if [[ "${EVENT_TYPE}" == "pull_request" ]]; then
+            echo "Source branch: ${SOURCE_BRANCH}"
+            echo "Target branch: ${TARGET_BRANCH}"
+            echo "Pull request number: ${PULL_REQUEST_NUMBER}"
+
+            if [[ "${SOURCE_BRANCH}" != "${TARGET_BRANCH}" ]]; then
               floating_tag="pr-${PULL_REQUEST_NUMBER}"
             else
               floating_tag="$(echo "${SOURCE_BRANCH}" | sed 's/[^a-zA-Z0-9_.]/-/g')"
@@ -474,7 +482,6 @@ spec:
                 floating_tag="latest"
               fi
             fi
-
             echo -n "${floating_tag}" | tee "$(results.FLOATING_TAG.path)"
 
     - name: generate-unique-tag

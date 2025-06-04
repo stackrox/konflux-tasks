@@ -44,7 +44,7 @@ spec:
     - name: PIPELINE_TARGET_BRANCH
       valueFrom:
         fieldRef:
-          fieldPath: metadata.annotations['build.appstudio.redhat.com/target_branch']
+          fieldPath: metadata.annotations['pipelinesascode.tekton.dev/branch']
     workingDir: /var/workdir/source
     script: |
       #!/usr/bin/env bash
@@ -56,7 +56,7 @@ spec:
       echo "Target branch: ${PIPELINE_TARGET_BRANCH}"
 
       is_retest_tagged_build="no"
-      if [[ "${PIPELINE_EVENT_TYPE}" == "retest-comment" ]]; then
+      if [[ "${PIPELINE_EVENT_TYPE}" =~ ^(re)?test-(all-)?comment$|label_update ]]; then
         echo "This is a retested build, checking if tagged."
         if [[ -n "$(git tag --points-at)" ]]; then
           echo "This is retested pipelinerun of a tagged build"
