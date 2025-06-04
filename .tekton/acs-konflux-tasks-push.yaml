@@ -470,6 +470,7 @@ spec:
             #!/usr/bin/env bash
             set -euo pipefail
 
+            # Normalize branch names because Konflux sometimes prepends refs/heads/ and sometimes doesn't.
             SOURCE_BRANCH="${SOURCE_BRANCH#refs/heads/}"
             TARGET_BRANCH="${TARGET_BRANCH#refs/heads/}"
 
