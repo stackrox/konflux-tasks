@@ -470,6 +470,9 @@ spec:
             #!/usr/bin/env bash
             set -euo pipefail
 
+            SOURCE_BRANCH="${SOURCE_BRANCH#refs/heads/}"
+            TARGET_BRANCH="${TARGET_BRANCH#refs/heads/}"
+
             echo "Source branch: ${SOURCE_BRANCH}"
             echo "Target branch: ${TARGET_BRANCH}"
             echo "Pull request number: ${PULL_REQUEST_NUMBER}"
