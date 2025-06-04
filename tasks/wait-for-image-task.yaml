@@ -33,6 +33,18 @@ spec:
 
       echo "Image $(params.IMAGE) found."
 
+      echo "Waiting for attestation for $(params.IMAGE) to appear..."
+      while true; do
+        if cosign tree "$(params.IMAGE)" | grep -qE "quay.io/.*:sha256-.*\.att$"; then
+          break
+        fi
+        echo "Attestation for $(params.IMAGE) not (yet) found, sleeping and retrying..."
+        sleep 1m
+      done
+
+      echo "Attestion for $(params.IMAGE) found, which means PipelineRun finished successfully and the image can be used further."
+
+      # Output
       raw_info="$(skopeo inspect \
         --retry-times 10 \
         --format '{{.Digest}} {{ index .Labels "vcs-ref" }} {{ index .Labels "source-location" }}' \
@@ -46,18 +58,6 @@ spec:
         exit 1
       fi
 
-      # Output
       echo -n "${infos[0]}" | tee "$(results.IMAGE_DIGEST.path)"
       echo -n "${infos[1]}" | tee "$(results.GIT_REF.path)"
       echo -n "${infos[2]}" | tee "$(results.GIT_REPO.path)"
-
-      echo "Waiting for attestation for $(params.IMAGE) to appear..."
-      while true; do
-        if cosign tree "$(params.IMAGE)" | grep -qE "quay.io/.*:sha256-.*\.att$"; then
-          break
-        fi
-        echo "Attestation for $(params.IMAGE) not (yet) found, sleeping and retrying..."
-        sleep 1m
-      done
-
-      echo "Attestion for $(params.IMAGE) found, which means PipelineRun finished successfully and the image can be used further."
