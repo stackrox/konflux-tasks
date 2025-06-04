@@ -56,12 +56,12 @@ spec:
     script: |
       #!/usr/bin/env bash
 
-      set -exuo pipefail
+      set -euo pipefail
 
       # Wait for the attestation OCI to appear.
       echo "Waiting for attestation OCI $(params.IMAGE).att to appear..."
       while true; do
-        if cosign tree "$(params.IMAGE)" | grep -E "quay.io/rhacs-eng/release-.*:sha256-.*\.att$"; then
+        if cosign tree "$(params.IMAGE)" | grep -qE "quay.io/rhacs-eng/release-.*:sha256-.*\.att$"; then
           break
         fi
         sleep 1m
