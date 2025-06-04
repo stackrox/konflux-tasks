@@ -17,7 +17,7 @@ spec:
     description: Git repository URL for the image's source code from `source-location` image label.
   steps:
   - name: wait-for-image
-    image: registry.access.redhat.com/ubi9/skopeo@sha256:df66d59b6ef68f352af64c6fe2ba430cf531c866280ef22842da1eb6dac3aa11
+    image: quay.io/konflux-ci/release-service-utils:latest@sha256:713046c88ac404d4b57405c9bf63226a92060d444eaf0e7efcb25e9b50bc37b0
     script: |
       #!/usr/bin/env bash
 
@@ -51,20 +51,13 @@ spec:
       echo -n "${infos[1]}" | tee "$(results.GIT_REF.path)"
       echo -n "${infos[2]}" | tee "$(results.GIT_REPO.path)"
 
-  - name: wait-for-attestation
-    image: registry.redhat.io/rhtas/cosign-rhel9:1.2.0-1744791100@sha256:cb53dcc3bc912dd7f12147f33af1b435eae5ff4ab83b85c0277b4004b20a0248
-    script: |
-      #!/usr/bin/env bash
-
-      set -euo pipefail
-
-      # Wait for the attestation OCI to appear.
-      echo "Waiting for attestation OCI $(params.IMAGE).att to appear..."
+      echo "Waiting for attestation for $(params.IMAGE) to appear..."
       while true; do
-        if cosign tree "$(params.IMAGE)" | grep -qE "quay.io/rhacs-eng/release-.*:sha256-.*\.att$"; then
+        if cosign tree "$(params.IMAGE)" | grep -qE "quay.io/.*:sha256-.*\.att$"; then
           break
         fi
+        echo "Attestation for $(params.IMAGE) not (yet) found, sleeping and retrying..."
         sleep 1m
       done
 
-      echo "Attestion $(params.IMAGE) found, signalling a successfully finished PipelineRun"
+      echo "Attestion for $(params.IMAGE) found, which means PipelineRun finished successfully and the image can be used further."
