@@ -456,10 +456,6 @@ spec:
         - name: get-floating-tag
           image: registry.redhat.io/ubi9-minimal:latest@sha256:92b1d5747a93608b6adb64dfd54515c3c5a360802db4706765ff3d8470df6290
           env:
-          - name: PIPELINE_EVENT_TYPE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.labels['pipelinesascode.tekton.dev/event-type']
           - name: SOURCE_BRANCH
             valueFrom:
               fieldRef:
@@ -474,33 +470,18 @@ spec:
             #!/usr/bin/env bash
             set -euo pipefail
 
-            echo "Event type: ${PIPELINE_EVENT_TYPE}"
             echo "Source branch: ${SOURCE_BRANCH}"
             echo "Target branch: ${TARGET_BRANCH}"
             echo "Pull request number: ${PULL_REQUEST_NUMBER}"
 
-            if [[ "${PIPELINE_EVENT_TYPE}" =~ ^(re)?test-(all-)?comment$ ]]; then
-              if [[ "${SOURCE_BRANCH}" != "${TARGET_BRANCH}" ]]; then
-                # This is a retest of a Pull Request, because SOURCE and TARGET branch are different.
-                # We are comparing those, because it's easier than attempting to detect if PULL_REQUEST_NUMBER is templated or not.
-                # We overwrite the PIPELINE_EVENT_TYPE to "pull_request" and assume we are on a branch build otherwise.
-                PIPELINE_EVENT_TYPE="pull_request"
-              else
-                PIPELINE_EVENT_TYPE="push"
-              fi
-            fi
-
-            echo "Overriden pipeline event type: ${PIPELINE_EVENT_TYPE}"
-
-            if [[ "${PIPELINE_EVENT_TYPE}" == "pull_request" ]]; then
+            if [[ "${SOURCE_BRANCH}" != "${TARGET_BRANCH}" ]]; then
               floating_tag="pr-${PULL_REQUEST_NUMBER}"
             else
-              floating_tag="$(echo "${TARGET_BRANCH}" | sed 's/[^a-zA-Z0-9_.]/-/g')"
-              if [[ "${TARGET_BRANCH}" == "main" ]]; then
+              floating_tag="$(echo "${SOURCE_BRANCH}" | sed 's/[^a-zA-Z0-9_.]/-/g')"
+              if [[ "${SOURCE_BRANCH}" == "main" ]]; then
                 floating_tag="latest"
               fi
             fi
-
             echo -n "${floating_tag}" | tee "$(results.FLOATING_TAG.path)"
 
     - name: generate-unique-tag
