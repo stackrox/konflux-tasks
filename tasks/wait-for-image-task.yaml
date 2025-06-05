@@ -51,13 +51,14 @@ spec:
       echo -n "${infos[1]}" | tee "$(results.GIT_REF.path)"
       echo -n "${infos[2]}" | tee "$(results.GIT_REPO.path)"
 
-      echo "Waiting for attestation for $(params.IMAGE) to appear..."
+      IMAGE_DIGEST="${infos[0]}"
+      echo "Waiting for attestation for $(params.IMAGE)@${IMAGE_DIGEST} to appear..."
       while true; do
-        if cosign tree "$(params.IMAGE)" | grep -qE "quay.io/.*:sha256-.*\.att$"; then
+        if cosign tree "$(params.IMAGE)@${IMAGE_DIGEST}" | grep -qE "quay.io/.*:sha256-.*\.att$"; then
           break
         fi
-        echo "Attestation for $(params.IMAGE) not (yet) found, sleeping and retrying..."
+        echo "Attestation for $(params.IMAGE)@${IMAGE_DIGEST} not (yet) found, sleeping and retrying..."
         sleep 1m
       done
 
-      echo "Attestion for $(params.IMAGE) found, which means PipelineRun finished successfully and the image can be used further."
+      echo "Attestion for $(params.IMAGE)@${IMAGE_DIGEST} found, which means PipelineRun finished successfully and the image can be used further."
