@@ -43,6 +43,7 @@ spec:
     workingDir: /var/workdir/source
     env:
     - name: PIPELINE_EVENT_TYPE
+      # Ref https://pipelinesascode.com/docs/guide/gitops_commands/#event-type-annotation-and-dynamic-variables
       valueFrom:
         fieldRef:
           fieldPath: metadata.labels['pipelinesascode.tekton.dev/event-type']
@@ -102,6 +103,8 @@ spec:
         log "Target branch as reported by Tekton: '${TARGET_BRANCH}'"
         log "Tag from Tekton: '${tag_from_tekton}'"
 
+        log "Tekton event: ${PIPELINE_EVENT_TYPE}"
+
         local tag_from_makefile
         tag_from_makefile="$(make -C "$(params.MAKEFILE_DIRECTORY)" --quiet --no-print-directory tag)"
         log "Tag reported by Makefile: '${tag_from_makefile}'"
@@ -134,7 +137,7 @@ spec:
           return
         fi
 
-        if [[ "${PIPELINE_EVENT_TYPE}" =~ ^(re)?test-(all-)?comment$|label_update ]]; then
+        if [[ "${PIPELINE_EVENT_TYPE}" =~ ^(re)?test-(all-)?comment$ ]]; then
           log "This seems to be a retest of a pipeline run, checking if this is for a tagged build."
           if [[ "${#tags_from_git_arr[*]}" -gt 0 ]]; then
             log "This seems to be a re-run of a tagged build, using the first tag detected: ${tags_from_git_arr[0]}."
@@ -193,7 +196,7 @@ spec:
           log "Did not spot the magic string in the SOURCE_BRANCH."
         fi
 
-        if grep -qE '^(release-[0-9a-z]+\.[0-9a-z]+|refs/tags/[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?)$' <<< "${TARGET_BRANCH}"; then
+        if grep -qE '^((refs/heads/)?release-[0-9a-z]+\.[0-9a-z]+|refs/tags/[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?)$' <<< "${TARGET_BRANCH}"; then
           log "This looks like a release branch or release tag push, or PR targeting the release branch. The tag suffix is suppressed."
           echo ""
           return
