@@ -17,7 +17,7 @@ spec:
     description: Git repository URL for the image's source code from `source-location` image label.
   steps:
   - name: wait-for-image
-    image: registry.access.redhat.com/ubi9/skopeo@sha256:df66d59b6ef68f352af64c6fe2ba430cf531c866280ef22842da1eb6dac3aa11
+    image: quay.io/konflux-ci/release-service-utils:latest@sha256:713046c88ac404d4b57405c9bf63226a92060d444eaf0e7efcb25e9b50bc37b0
     script: |
       #!/usr/bin/env bash
 
@@ -42,10 +42,41 @@ spec:
       # Turning raw_info into an array for easier handling.
       infos=( $raw_info )
       if [[ "${#infos[@]}" -ne 3 ]]; then
-        echo "ERROR: Not all required information was found. Verify that the 'vcs-ref' and 'source-location' labels are set on the image $(params.IMAGE)."
+        >&2 echo "ERROR: Not all required information was found. Verify that the 'vcs-ref' and 'source-location' labels are set on the image $(params.IMAGE)."
         exit 1
       fi
 
+      # Output
       echo -n "${infos[0]}" | tee "$(results.IMAGE_DIGEST.path)"
+      echo
       echo -n "${infos[1]}" | tee "$(results.GIT_REF.path)"
+      echo
       echo -n "${infos[2]}" | tee "$(results.GIT_REPO.path)"
+      echo
+
+      IMAGE_WITH_DIGEST="$(params.IMAGE)@${infos[0]}"
+      echo "Waiting for attestation for ${IMAGE_WITH_DIGEST} to appear..."
+      while true; do
+        if cosign tree "${IMAGE_WITH_DIGEST}" | grep -qE "quay.io/.*:sha256-.*\.att$"; then
+          break
+        fi
+        echo "Attestation for ${IMAGE_WITH_DIGEST} not (yet) found, sleeping and retrying..."
+        sleep 1m
+      done
+
+      echo "Attestion for ${IMAGE_WITH_DIGEST} found, which means PipelineRun finished. Checking if any tasks finished unsuccessfully."
+
+      no_success="$(cosign download attestation "${IMAGE_WITH_DIGEST}" | \
+        jq -r '.payload' | \
+        base64 -d | \
+        jq '.predicate.buildConfig.tasks | [ .[] | select(.status != "Succeeded") ] | length'
+      )"
+
+      if [[ "${no_success}" -gt 0 ]]; then
+        >&2 echo "ERROR: At least one task has failed during build of ${IMAGE_WITH_DIGEST}."
+        >&2 echo "ERROR: This image will likely fail Conforma checks. Try building it again and re-run this pipeline."
+        exit 1
+      else
+        echo "The pipeline that built ${IMAGE_WITH_DIGEST} finished successfully."
+        echo "Accepting this image."
+      fi
