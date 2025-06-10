@@ -51,29 +51,29 @@ spec:
       echo -n "${infos[1]}" | tee "$(results.GIT_REF.path)"
       echo -n "${infos[2]}" | tee "$(results.GIT_REPO.path)"
 
-      IMAGE_DIGEST="${infos[0]}"
-      echo "Waiting for attestation for ${IMAGE}@${IMAGE_DIGEST} to appear..."
+      IMAGE_WITH_DIGEST="$(params.IMAGE)@${infos[0]}"
+      echo "Waiting for attestation for ${IMAGE_WITH_DIGEST} to appear..."
       while true; do
-        if cosign tree "${IMAGE}@${IMAGE_DIGEST}" | grep -qE "quay.io/.*:sha256-.*\.att$"; then
+        if cosign tree "${IMAGE_WITH_DIGEST}" | grep -qE "quay.io/.*:sha256-.*\.att$"; then
           break
         fi
-        echo "Attestation for ${IMAGE}@${IMAGE_DIGEST} not (yet) found, sleeping and retrying..."
+        echo "Attestation for ${IMAGE_WITH_DIGEST} not (yet) found, sleeping and retrying..."
         sleep 1m
       done
 
-      echo "Attestion for ${IMAGE}@${IMAGE_DIGEST} found, which means PipelineRun finished. Checking if any tasks finished unsuccessfully."
+      echo "Attestion for ${IMAGE_WITH_DIGEST} found, which means PipelineRun finished. Checking if any tasks finished unsuccessfully."
 
-      no_success="$(cosign download attestation "${IMAGE}@${IMAGE_DIGEST}" | \
+      no_success="$(cosign download attestation "${IMAGE_WITH_DIGEST}" | \
         jq -r '.payload' | \
         base64 -d | \
         jq '.predicate.buildConfig.tasks | [ .[] | select(.status != "Succeeded") ] | length'
       )"
 
       if [[ "${no_success}" -gt 0 ]]; then
-        >&2 echo "ERROR: At least one task has failed during build of ${IMAGE}@${IMAGE_DIGEST}."
+        >&2 echo "ERROR: At least one task has failed during build of ${IMAGE_WITH_DIGEST}."
         >&2 echo "ERROR: This image will likely fail Conforma checks. Try building it again and re-run this pipeline."
         exit 1
       else
-        echo "The pipeline that built ${IMAGE}@${IMAGE_DIGEST} finished successfully."
+        echo "The pipeline that built ${IMAGE_WITH_DIGEST} finished successfully."
         echo "Accepting this image."
       fi
