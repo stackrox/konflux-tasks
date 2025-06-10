@@ -48,8 +48,11 @@ spec:
 
       # Output
       echo -n "${infos[0]}" | tee "$(results.IMAGE_DIGEST.path)"
+      echo
       echo -n "${infos[1]}" | tee "$(results.GIT_REF.path)"
+      echo
       echo -n "${infos[2]}" | tee "$(results.GIT_REPO.path)"
+      echo
 
       IMAGE_WITH_DIGEST="$(params.IMAGE)@${infos[0]}"
       echo "Waiting for attestation for ${IMAGE_WITH_DIGEST} to appear..."
