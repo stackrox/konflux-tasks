@@ -63,15 +63,15 @@ spec:
 
       echo "Attestion for ${IMAGE}@${IMAGE_DIGEST} found, which means PipelineRun finished. Checking if any tasks finished unsuccessfully."
 
-      no_success=$(cosign download attestation "${IMAGE}@${IMAGE_DIGEST}" | \
+      no_success="$(cosign download attestation "${IMAGE}@${IMAGE_DIGEST}" | \
         jq -r '.payload' | \
         base64 -d | \
         jq '.predicate.buildConfig.tasks | [ .[] | select(.status != "Succeeded") ] | length'
-      )
+      )"
 
-      if [ "${no_success}" -gt 0 ]; then
-        echo "ERR: At least one task has failed during build of ${IMAGE}@${IMAGE_DIGEST}."
-        echo "ERR: Try building it again and re-run this pipeline."
+      if [[ "${no_success}" -gt 0 ]]; then
+        >&2 echo "ERROR: At least one task has failed during build of ${IMAGE}@${IMAGE_DIGEST}."
+        >&2 echo "ERROR: This image will likely fail Conforma checks. Try building it again and re-run this pipeline."
         exit 1
       else
         echo "The pipeline that built ${IMAGE}@${IMAGE_DIGEST} finished successfully."
