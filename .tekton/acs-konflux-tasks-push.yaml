@@ -511,8 +511,10 @@ spec:
 
     - name: apply-tags
       params:
-      - name: IMAGE
+      - name: IMAGE_URL
         value: $(tasks.build-container.results.IMAGE_URL)
+      - name: IMAGE_DIGEST
+        value: $(tasks.build-container.results.IMAGE_DIGEST)
       - name: ADDITIONAL_TAGS
         value: [ $(tasks.get-floating-tag.results.FLOATING_TAG), $(tasks.generate-unique-tag.results.UNIQUE_TAG) ]
       taskRef:
@@ -650,8 +652,10 @@ spec:
 
     - name: apply-tags-trust
       params:
-      - name: IMAGE
+      - name: IMAGE_URL
         value: $(params.output-trust-data-repo):$(tasks.get-floating-tag.results.FLOATING_TAG)
+      - name: IMAGE_DIGEST
+        value: $(tasks.build-container.results.IMAGE_DIGEST)
       - name: ADDITIONAL_TAGS
         value: [ $(tasks.generate-unique-tag.results.UNIQUE_TAG) ]
       runAfter:
