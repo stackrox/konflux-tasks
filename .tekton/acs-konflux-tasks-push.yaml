@@ -597,6 +597,9 @@ spec:
           type: string
         - name: TRUST_IMAGE_TAG
           type: string
+        results:
+        - name: TRUST_BUNDLE_IMAGE_DIGEST
+          description: Image digest of the trust bundle artifact
         steps:
         - name: update-tasks-trust
           image: quay.io/konflux-ci/appstudio-utils:latest@sha256:a5d881d5ed05eaa751eec70e9f800e98667e256571422877e04925dc84b3fda7
@@ -648,36 +651,23 @@ spec:
                 --output "oci:${trust_image_ref}"
             fi
 
-            echo ">>> Done"
+            # We can't use skopeo here, because the trust artifact is not a supported type
+            # We can't use oras manifest or podman manifest inspect, because they don't show the actual digest
+            # of the artifact, only of the layer.
+            # Hence, we take this workaround.
+            oras discover "${trust_image_ref}" | awk -F'@' '{print $2}' \
+              | tee "$(results.TRUST_BUNDLE_IMAGE_DIGEST.path)"
 
-    - name: wait-for-image
-      params:
-      - name: IMAGE
-        value: $(params.output-trust-data-repo):$(tasks.get-floating-tag.results.FLOATING_TAG)
-      runAfter:
-      # Explicit dependency on `update-tasks-trust` because that one pushes the trust image.
-      - update-tasks-trust
-      taskRef:
-        params:
-        - name: name
-          value: wait-for-image
-        - name: bundle
-          value: quay.io/rhacs-eng/konflux-tasks:latest@sha256:8ebb5d5589a23798f7c3f049d9ba42f726c5a39314f1cb10b10f9466e89d0dca
-        - name: kind
-          value: task
-        resolver: bundles
+            echo ">>> Done"
 
     - name: apply-tags-trust
       params:
       - name: IMAGE_URL
         value: $(params.output-trust-data-repo):$(tasks.get-floating-tag.results.FLOATING_TAG)
       - name: IMAGE_DIGEST
-        value: $(tasks.wait-for-image.results.IMAGE_DIGEST)
+        value: $(tasks.update-tasks-trust.results.TRUST_BUNDLE_IMAGE_DIGEST)
       - name: ADDITIONAL_TAGS
         value: [ $(tasks.generate-unique-tag.results.UNIQUE_TAG) ]
-      runAfter:
-      # Explicit dependency on `update-tasks-trust` because that one pushes the trust image.
-      - update-tasks-trust
       taskRef:
         params:
         - name: name
