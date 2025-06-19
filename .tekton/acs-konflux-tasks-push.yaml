@@ -655,7 +655,7 @@ spec:
             # We can't use oras manifest or podman manifest inspect, because they don't show the actual digest
             # of the artifact, only of the layer.
             # Hence, we take this workaround.
-            oras discover "${trust_image_ref}" | awk -F'@' '{print $2}' \
+            oras discover "${trust_image_ref}" | awk -F'@' '{print $2}' | tr -d '\n' \
               | tee "$(results.TRUST_BUNDLE_IMAGE_DIGEST.path)"
 
             echo ">>> Done"
