@@ -650,13 +650,29 @@ spec:
 
             echo ">>> Done"
 
+    - name: wait-for-image
+      params:
+      - name: IMAGE
+        value: $(params.output-trust-data-repo):$(tasks.get-floating-tag.results.FLOATING_TAG)
+      runAfter:
+      # Explicit dependency on `update-tasks-trust` because that one pushes the trust image.
+      - update-tasks-trust
+      taskRef:
+        params:
+        - name: name
+          value: wait-for-image
+        - name: bundle
+          value: quay.io/rhacs-eng/konflux-tasks:latest@sha256:8ebb5d5589a23798f7c3f049d9ba42f726c5a39314f1cb10b10f9466e89d0dca
+        - name: kind
+          value: task
+        resolver: bundles
+
     - name: apply-tags-trust
       params:
       - name: IMAGE_URL
         value: $(params.output-trust-data-repo):$(tasks.get-floating-tag.results.FLOATING_TAG)
-      # This must be the digest of the trust image, but the previous command doesn't output it.
-      # - name: IMAGE_DIGEST
-      #   value: $()
+      - name: IMAGE_DIGEST
+        value: $(tasks.wait-for-image.results.IMAGE_DIGEST)
       - name: ADDITIONAL_TAGS
         value: [ $(tasks.generate-unique-tag.results.UNIQUE_TAG) ]
       runAfter:
