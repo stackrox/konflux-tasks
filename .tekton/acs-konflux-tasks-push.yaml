@@ -651,9 +651,9 @@ spec:
                 --output "oci:${trust_image_ref}"
             fi
 
-            # We can't use skopeo here, because the trust artifact is not a supported type
+            # We can't use skopeo here, because the trust artifact is not a supported type.
             # We can't use oras manifest or podman manifest inspect, because they don't show the actual digest
-            # of the artifact, only of the layer.
+            # of the artifact, only of the content layer.
             # Hence, we take this workaround.
             oras discover "${trust_image_ref}" | awk -F'@' '{print $2}' | tr -d '\n' \
               | tee "$(results.TRUST_BUNDLE_IMAGE_DIGEST.path)"
