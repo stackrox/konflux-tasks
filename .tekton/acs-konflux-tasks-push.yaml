@@ -516,7 +516,7 @@ spec:
       - name: IMAGE_DIGEST
         value: $(tasks.build-container.results.IMAGE_DIGEST)
       - name: ADDITIONAL_TAGS
-        value: [ $(tasks.get-floating-tag.results.FLOATING_TAG), $(tasks.generate-unique-tag.results.UNIQUE_TAG) ]
+        value: [ $(tasks.generate-unique-tag.results.UNIQUE_TAG), $(tasks.get-floating-tag.results.FLOATING_TAG) ]
       taskRef:
         params:
         - name: name
@@ -588,7 +588,7 @@ spec:
       - name: TRUST_IMAGE_REPO
         value: $(params.output-trust-data-repo)
       - name: TRUST_IMAGE_TAG
-        value: $(tasks.get-floating-tag.results.FLOATING_TAG)
+        value: $(tasks.generate-unique-tag.results.UNIQUE_TAG)
       taskSpec:
         params:
         - name: BUNDLE_REF
@@ -663,11 +663,11 @@ spec:
     - name: apply-tags-trust
       params:
       - name: IMAGE_URL
-        value: $(params.output-trust-data-repo):$(tasks.get-floating-tag.results.FLOATING_TAG)
+        value: $(params.output-trust-data-repo):$(tasks.generate-unique-tag.results.UNIQUE_TAG)
       - name: IMAGE_DIGEST
         value: $(tasks.update-tasks-trust.results.TRUST_BUNDLE_IMAGE_DIGEST)
       - name: ADDITIONAL_TAGS
-        value: [ $(tasks.generate-unique-tag.results.UNIQUE_TAG) ]
+        value: [ $(tasks.get-floating-tag.results.FLOATING_TAG) ]
       taskRef:
         params:
         - name: name
