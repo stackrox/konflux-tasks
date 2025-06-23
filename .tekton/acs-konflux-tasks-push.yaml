@@ -651,12 +651,12 @@ spec:
                 --output "oci:${trust_image_ref}"
             fi
 
-            # We can't use skopeo inspect, oras manifest or podman manifest inspect, because they don't show the actual digest
-            # of the artifact, only of the content layers.
-            # Hence, we take this workaround.
-            oras discover "${trust_image_ref}" --format table \
-              | grep '^Digest:' | cut -d' ' -f2 | tr -d '\n' \
-              | tee "$(results.TRUST_BUNDLE_IMAGE_DIGEST.path)"
+            # Because this image is a custom type we can't use skopeo inspect, oras manifest or podman manifest inspect easily,
+            # as they don't include the manifest of the artifact, only of the content layers.
+            # Hence, we take this workaround to build the sha256 sum ourselves.
+            DIGEST=$(skopeo inspect --raw docker://${trust_image_ref} \
+              | sha256sum | cut -d' ' -f1)
+            echo -n "sha256:${DIGEST}" | tee "$(results.TRUST_BUNDLE_IMAGE_DIGEST.path)"
 
             echo ">>> Done"
 
