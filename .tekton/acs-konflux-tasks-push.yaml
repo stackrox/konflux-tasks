@@ -654,7 +654,8 @@ spec:
             # We can't use skopeo inspect, oras manifest or podman manifest inspect, because they don't show the actual digest
             # of the artifact, only of the content layers.
             # Hence, we take this workaround.
-            oras discover "${trust_image_ref}" --format table | grep '^Digest:' | cut -d' ' -f2 \
+            oras discover "${trust_image_ref}" --format table \
+              | grep '^Digest:' | cut -d' ' -f2 | tr -d '\n' \
               | tee "$(results.TRUST_BUNDLE_IMAGE_DIGEST.path)"
 
             echo ">>> Done"
