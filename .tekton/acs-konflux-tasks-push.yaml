@@ -246,7 +246,7 @@ spec:
         - name: name
           value: tkn-bundle-oci-ta
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-tkn-bundle-oci-ta:0.2@sha256:3e80e905d904d00264c062d907a7e2d27bee08751e8d028daf458e07338c5de8
+          value: quay.io/konflux-ci/tekton-catalog/task-tkn-bundle-oci-ta:0.2@sha256:8b7b0d7c7050816dcb8905a255fd5ef40cae60b2c74ec47420f579990ceeb8eb
         - name: kind
           value: task
         resolver: bundles
@@ -511,8 +511,10 @@ spec:
 
     - name: apply-tags
       params:
-      - name: IMAGE
+      - name: IMAGE_URL
         value: $(tasks.build-container.results.IMAGE_URL)
+      - name: IMAGE_DIGEST
+        value: $(tasks.build-container.results.IMAGE_DIGEST)
       - name: ADDITIONAL_TAGS
         value: [ $(tasks.get-floating-tag.results.FLOATING_TAG), $(tasks.generate-unique-tag.results.UNIQUE_TAG) ]
       taskRef:
@@ -520,7 +522,7 @@ spec:
         - name: name
           value: apply-tags
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-apply-tags:0.1@sha256:1c6f673fe100a49f58aaef62580c8adf0c397790964f4e7bac7fcd3f4d07c92e
+          value: quay.io/konflux-ci/tekton-catalog/task-apply-tags:0.2@sha256:0c411c27483849a936c0c420a57e477113e9fafc63077647200d6614d9ebb872
         - name: kind
           value: task
         resolver: bundles
@@ -536,7 +538,7 @@ spec:
         - name: name
           value: rpms-signature-scan
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-rpms-signature-scan:0.2@sha256:ec7f6de651458e4a5842b145e761b0d86b03b52bec1515d6d8a1b8cf107af95c
+          value: quay.io/konflux-ci/tekton-catalog/task-rpms-signature-scan:0.2@sha256:2a5e357cd7f4b5634474de14dfc09aec48acca3995cbb3bb5d532025923322c2
         - name: kind
           value: task
         resolver: bundles
@@ -595,6 +597,9 @@ spec:
           type: string
         - name: TRUST_IMAGE_TAG
           type: string
+        results:
+        - name: TRUST_BUNDLE_IMAGE_DIGEST
+          description: Image digest of the trust bundle artifact
         steps:
         - name: update-tasks-trust
           image: quay.io/konflux-ci/appstudio-utils:latest@sha256:77b2e18520476600f8579fb053cad2150117f4827d5504c3fa35ff9ee23e082c
@@ -646,23 +651,30 @@ spec:
                 --output "oci:${trust_image_ref}"
             fi
 
+            # Because this image is a custom type we can't use skopeo inspect, oras manifest or podman manifest inspect easily,
+            # as they don't include the manifest of the artifact, only of the content layers.
+            # Hence, we take this workaround to build the sha256 sum ourselves.
+            DIGEST=$(skopeo inspect --raw docker://${trust_image_ref} \
+              | sha256sum | cut -d' ' -f1)
+            echo -n "sha256:${DIGEST}" | tee "$(results.TRUST_BUNDLE_IMAGE_DIGEST.path)"
+            echo
+
             echo ">>> Done"
 
     - name: apply-tags-trust
       params:
-      - name: IMAGE
+      - name: IMAGE_URL
         value: $(params.output-trust-data-repo):$(tasks.get-floating-tag.results.FLOATING_TAG)
+      - name: IMAGE_DIGEST
+        value: $(tasks.update-tasks-trust.results.TRUST_BUNDLE_IMAGE_DIGEST)
       - name: ADDITIONAL_TAGS
         value: [ $(tasks.generate-unique-tag.results.UNIQUE_TAG) ]
-      runAfter:
-      # Explicit dependency on `update-tasks-trust` because that one pushes the trust image.
-      - update-tasks-trust
       taskRef:
         params:
         - name: name
           value: apply-tags
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-apply-tags:0.1@sha256:1c6f673fe100a49f58aaef62580c8adf0c397790964f4e7bac7fcd3f4d07c92e
+          value: quay.io/konflux-ci/tekton-catalog/task-apply-tags:0.2@sha256:0c411c27483849a936c0c420a57e477113e9fafc63077647200d6614d9ebb872
         - name: kind
           value: task
         resolver: bundles
