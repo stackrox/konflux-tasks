@@ -42,7 +42,7 @@ spec:
     - use
     - $(params.SOURCE_ARTIFACT)=/var/workdir/source
   - name: fetch-vuln-mappings
-    image: registry.access.redhat.com/ubi9-minimal:latest@sha256:e12131db2e2b6572613589a94b7f615d4ac89d94f859dad05908aeb478fb090f
+    image: registry.access.redhat.com/ubi9-minimal:latest@sha256:383329bf9c4f968e87e85d30ba3a5cb988a3bbde28b8e4932dcd3a025fd9c98c
     workingDir: /var/workdir/source
     script: scanner/image/scanner/download-mappings.sh "$(params.TARGET_DIR)"
   - name: create-trusted-artifact
