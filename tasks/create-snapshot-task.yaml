@@ -98,7 +98,7 @@ spec:
           ), "Component must have component name, containerImage, revision and repository set."
 
 
-      def create_labels(commit_sha, pipeline_run_name):
+      def create_labels(commit_sha, pipeline_run_name, product_version):
           return {
               # We don't set the appstudio's default pipelinerun label's value to the PipelineRun name because
               # this inhibits the OOTB creation of a Snapshot in Konflux which in turn may have undesired
@@ -116,6 +116,9 @@ spec:
 
               # This is to allow differentiating our custom Snapshots from the ones created by Konflux.
               "acs-style-snapshot": "true",
+
+              # This corresponds to image tags and version string embedded in the product's executables.
+              "acs-product-version": product_version,
           }
 
 
@@ -162,6 +165,7 @@ spec:
           labels = create_labels(
               commit_sha=os.environ["COMMIT_SHA"],
               pipeline_run_name=os.environ["PIPELINE_RUN_NAME"],
+              product_version=product_version,
           )
 
           snapshot = construct_snapshot(
