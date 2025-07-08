@@ -94,10 +94,24 @@ spec:
           ), "Component must have component name, containerImage, revision and repository set."
 
 
+      def create_labels(pipeline_run_name):
+          return {
+              # We don't set the appstudio's default pipelinerun label's value to the PipelineRun name because
+              # this inhibits the OOTB creation of a Snapshot in Konflux which in turn may have undesired
+              # effects, e.g. the operator-bundle image not being promoted in the corresponding component.
+              # We still add the label because otherwise our custom Snapshot will not load in UI.
+              "appstudio.openshift.io/build-pipelinerun": "",
+
+              # The following is a custom label and we add it to help ourselves find out which PipelineRun
+              # created the Snapshot.
+              "created-by-pipelinerun": pipeline_run_name,
+          }
+
+
       def construct_snapshot(
           snapshot_name,
-          pipeline_run_name,
           namespace,
+          labels,
           application_name,
           components
       ):
@@ -107,17 +121,7 @@ spec:
               "metadata": {
                   "name": snapshot_name,
                   "namespace": namespace,
-                  "labels": {
-                      # We don't set the appstudio's default pipelinerun label's value to the PipelineRun name because
-                      # this inhibits the OOTB creation of a Snapshot in Konflux which in turn may have undesired
-                      # effects, e.g. the operator-bundle image not being promoted in the corresponding component.
-                      # We still add the label because otherwise our custom Snapshot will not load in UI.
-                      "appstudio.openshift.io/build-pipelinerun": "",
-
-                      # The following is a custom label and we add it to help ourselves find out which PipelineRun
-                      # created the Snapshot.
-                      "created-by-pipelinerun": pipeline_run_name
-                  }
+                  "labels": labels,
               },
               "spec": {
                   "application": application_name,
@@ -144,11 +148,12 @@ spec:
           snapshot_name = determine_snapshot_name(application_name, product_version)
           resource_version_suffix = determine_resource_version_suffix(application_name)
           components = [process_component(c, resource_version_suffix) for c in raw_components]
+          labels = create_labels(pipeline_run_name)
 
           snapshot = construct_snapshot(
               snapshot_name=snapshot_name,
-              pipeline_run_name=pipeline_run_name,
               namespace=namespace,
+              labels=labels,
               application_name=application_name,
               components=components
           )
