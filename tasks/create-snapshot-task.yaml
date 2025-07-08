@@ -40,6 +40,10 @@ spec:
       valueFrom:
         fieldRef:
           fieldPath: metadata.labels['appstudio.openshift.io/application']
+    - name: COMMIT_SHA
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['pipelinesascode.tekton.dev/sha']
     - name: PIPELINE_RUN_NAME
       valueFrom:
         fieldRef:
@@ -94,7 +98,7 @@ spec:
           ), "Component must have component name, containerImage, revision and repository set."
 
 
-      def create_labels(pipeline_run_name):
+      def create_labels(commit_sha, pipeline_run_name):
           return {
               # We don't set the appstudio's default pipelinerun label's value to the PipelineRun name because
               # this inhibits the OOTB creation of a Snapshot in Konflux which in turn may have undesired
@@ -105,6 +109,13 @@ spec:
               # The following is a custom label and we add it to help ourselves find out which PipelineRun
               # created the Snapshot.
               "created-by-pipelinerun": pipeline_run_name,
+
+              # This corresponds to the label put by Konflux on its Snapshots. It is to allow our tooling efficiently
+              # find Snapshots for a commit.
+              "pac.test.appstudio.openshift.io/sha": commit_sha,
+
+              # This is to allow differentiating our custom Snapshots from the ones created by Konflux.
+              "acs-style-snapshot": "true",
           }
 
 
@@ -141,14 +152,17 @@ spec:
           application_name = os.environ["APPLICATION_NAME"]
           raw_components = parse_components_input(os.environ["COMPONENTS"])
           namespace = os.environ["NAMESPACE"]
-          pipeline_run_name = os.environ["PIPELINE_RUN_NAME"]
           product_version = os.environ["PRODUCT_VERSION"]
           snapshot_name_result_path = os.environ["SNAPSHOT_NAME_RESULT_PATH"]
 
           snapshot_name = determine_snapshot_name(application_name, product_version)
           resource_version_suffix = determine_resource_version_suffix(application_name)
           components = [process_component(c, resource_version_suffix) for c in raw_components]
-          labels = create_labels(pipeline_run_name)
+
+          labels = create_labels(
+              commit_sha=os.environ["COMMIT_SHA"],
+              pipeline_run_name=os.environ["PIPELINE_RUN_NAME"],
+          )
 
           snapshot = construct_snapshot(
               snapshot_name=snapshot_name,
