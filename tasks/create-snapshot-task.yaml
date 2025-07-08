@@ -98,8 +98,11 @@ spec:
           ), "Component must have component name, containerImage, revision and repository set."
 
 
-      def create_labels(commit_sha, pipeline_run_name, product_version):
+      def create_labels(application_name, commit_sha, pipeline_run_name, product_version):
           return {
+              # Match application name label put by Konflux on its Snapshots. Can be handy for searching by label.
+              "appstudio.openshift.io/application": application_name,
+
               # We don't set the appstudio's default pipelinerun label's value to the PipelineRun name because
               # this inhibits the OOTB creation of a Snapshot in Konflux which in turn may have undesired
               # effects, e.g. the operator-bundle image not being promoted in the corresponding component.
@@ -163,6 +166,7 @@ spec:
           components = [process_component(c, resource_version_suffix) for c in raw_components]
 
           labels = create_labels(
+              application_name=application_name,
               commit_sha=os.environ["COMMIT_SHA"],
               pipeline_run_name=os.environ["PIPELINE_RUN_NAME"],
               product_version=product_version,
