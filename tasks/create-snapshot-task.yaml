@@ -100,7 +100,7 @@ spec:
 
       def create_labels(application_name, commit_sha, pipeline_run_name, product_version):
           return {
-              # Match application name label put by Konflux on its Snapshots. Can be handy for searching by label.
+              # Matches application name label put by Konflux on its Snapshots. Can be handy for searching by label.
               "appstudio.openshift.io/application": application_name,
 
               # We don't set the appstudio's default pipelinerun label's value to the PipelineRun name because
@@ -113,8 +113,8 @@ spec:
               # created the Snapshot.
               "created-by-pipelinerun": pipeline_run_name,
 
-              # This corresponds to the label put by Konflux on its Snapshots. It is to allow our tooling efficiently
-              # find Snapshots for a commit.
+              # This corresponds to the label put by Konflux on its Snapshots. It is to efficient finding of Snapshots
+              # for a commit.
               "pac.test.appstudio.openshift.io/sha": commit_sha,
 
               # This is to allow differentiating our custom Snapshots from the ones created by Konflux.
