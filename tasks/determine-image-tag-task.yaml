@@ -123,7 +123,7 @@ spec:
 
         if [[ -n "${tag_from_tekton}" ]]; then
           log "This seems to be a tekton tag push event, using ${tag_from_tekton} for the tag."
-          echo "${tag_from_tekton}"
+          sanitize_tag "${tag_from_tekton}"
           return
         fi
 
@@ -131,7 +131,7 @@ spec:
           log "This seems to be a retest of a pipeline run, checking if this is for a tagged build."
           if [[ "${#tags_from_git_arr[*]}" -gt 0 ]]; then
             log "This seems to be a re-run of a tagged build, using the first tag detected: ${tags_from_git_arr[0]}."
-            echo "${tags_from_git_arr[0]}"
+            sanitize_tag "${tags_from_git_arr[0]}"
             return
           else
             log "This is not a tagged build, so continuing with normal logic."
