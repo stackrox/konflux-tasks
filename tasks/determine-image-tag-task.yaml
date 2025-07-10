@@ -122,7 +122,7 @@ spec:
         # 2. Decide
 
         if [[ -n "${tag_from_tekton}" ]]; then
-          log "This seems to be a tekton tag push event, using ${tag_from_tekton} for the tag."
+          log "This seems to be a tekton tag push event, using '${tag_from_tekton}' for the tag."
           sanitize_tag "${tag_from_tekton}"
           return
         fi
@@ -130,7 +130,7 @@ spec:
         if [[ "${PIPELINE_EVENT_TYPE}" =~ ^(re)?test-(all-)?comment$ ]]; then
           log "This seems to be a retest of a pipeline run, checking if this is for a tagged build."
           if [[ "${#tags_from_git_arr[*]}" -gt 0 ]]; then
-            log "This seems to be a re-run of a tagged build, using the first tag detected: ${tags_from_git_arr[0]}."
+            log "This seems to be a re-run of a tagged build, using the first tag detected: '${tags_from_git_arr[0]}'."
             sanitize_tag "${tags_from_git_arr[0]}"
             return
           else
@@ -143,12 +143,12 @@ spec:
           log "This is not a tag push event but Makefile reports literally the git tag '${tag_from_makefile}'."
           log "This happens when a build was triggered not by a tag push event but the commit is tagged and when the Makefile doesn't use '--long' with 'git describe'."
           log "We should use a different image tag for this build in order to not mix results with a build that was triggered by the tag push event and which will indeed use '${tag_from_makefile}' as the tag for images built there."
-          log "Using ${git_describe_output} for the tag."
+          log "Using '${git_describe_output}' for the tag."
           echo "${git_describe_output}"
           return
         fi
 
-        log "Using Makefile output ${tag_from_makefile} for the tag."
+        log "Using Makefile output '${tag_from_makefile}' for the tag."
         sanitize_tag "${tag_from_makefile}"
         return
       }
@@ -169,7 +169,7 @@ spec:
         tag_sanitized="$(echo "${tag}" | sed -E 's@^(([[:digit:]]+\.)+)x(-)?@\10\3@g' )"
 
         if [[ "$(is_stackrox_repo)" == "yes" && "${tag}" != "${tag_sanitized}" ]]; then
-          log "This is StackRox repo, using tag sanitized for '.x'->'.0' ${tag_sanitized}."
+          log "This is StackRox repo, using '.x'->'.0' sanitized tag '${tag_sanitized}'."
           echo "${tag_sanitized}"
           return
         fi
