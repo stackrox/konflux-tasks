@@ -26,24 +26,28 @@ spec:
   - name: render-snapshot
     image: registry.access.redhat.com/ubi9:latest@sha256:e5ab898b4f3e91e31b4d202e92b4ca409ac18c2de77c4813807b3761332bf556
     env:
-    - name: APPLICATION_NAME
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.labels['appstudio.openshift.io/application']
     - name: COMPONENTS
       value: $(params.COMPONENTS)
-    - name: NAMESPACE
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.namespace
-    - name: PIPELINE_RUN_NAME
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.labels['tekton.dev/pipelineRun']
     - name: PRODUCT_VERSION
       value: $(params.PRODUCT_VERSION)
     - name: SNAPSHOT_NAME_RESULT_PATH
       value: $(results.SNAPSHOT_NAME.path)
+    - name: NAMESPACE
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    - name: APPLICATION_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['appstudio.openshift.io/application']
+    - name: COMMIT_SHA
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['pipelinesascode.tekton.dev/sha']
+    - name: PIPELINE_RUN_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['tekton.dev/pipelineRun']
     script: |
       #!/usr/bin/env python3
 
@@ -94,10 +98,37 @@ spec:
           ), "Component must have component name, containerImage, revision and repository set."
 
 
+      def create_labels(application_name, commit_sha, pipeline_run_name, product_version):
+          return {
+              # Matches application name label put by Konflux on its Snapshots. Can be handy for searching by label.
+              "appstudio.openshift.io/application": application_name,
+
+              # We don't set the appstudio's default pipelinerun label's value to the PipelineRun name because
+              # this inhibits the OOTB creation of a Snapshot in Konflux which in turn may have undesired
+              # effects, e.g. the operator-bundle image not being promoted in the corresponding component.
+              # We still add the label because otherwise our custom Snapshot will not load in UI.
+              "appstudio.openshift.io/build-pipelinerun": "",
+
+              # The following is a custom label and we add it to help ourselves find out which PipelineRun
+              # created the Snapshot.
+              "created-by-pipelinerun": pipeline_run_name,
+
+              # This corresponds to the label put by Konflux on its Snapshots. It is to efficiently find Snapshots
+              # for a commit.
+              "pac.test.appstudio.openshift.io/sha": commit_sha,
+
+              # This is to allow differentiating our custom Snapshots from the ones created by Konflux.
+              "acs-style-snapshot": "true",
+
+              # This corresponds to image tags and version string embedded in the product's executables.
+              "acs-product-version": product_version,
+          }
+
+
       def construct_snapshot(
           snapshot_name,
-          pipeline_run_name,
           namespace,
+          labels,
           application_name,
           components
       ):
@@ -107,17 +138,7 @@ spec:
               "metadata": {
                   "name": snapshot_name,
                   "namespace": namespace,
-                  "labels": {
-                      # We don't set the appstudio's default pipelinerun label's value to the PipelineRun name because
-                      # this inhibits the OOTB creation of a Snapshot in Konflux which in turn may have undesired
-                      # effects, e.g. the operator-bundle image not being promoted in the corresponding component.
-                      # We still add the label because otherwise our custom Snapshot will not load in UI.
-                      "appstudio.openshift.io/build-pipelinerun": "",
-
-                      # The following is a custom label and we add it to help ourselves find out which PipelineRun
-                      # created the Snapshot.
-                      "created-by-pipelinerun": pipeline_run_name
-                  }
+                  "labels": labels,
               },
               "spec": {
                   "application": application_name,
@@ -137,7 +158,6 @@ spec:
           application_name = os.environ["APPLICATION_NAME"]
           raw_components = parse_components_input(os.environ["COMPONENTS"])
           namespace = os.environ["NAMESPACE"]
-          pipeline_run_name = os.environ["PIPELINE_RUN_NAME"]
           product_version = os.environ["PRODUCT_VERSION"]
           snapshot_name_result_path = os.environ["SNAPSHOT_NAME_RESULT_PATH"]
 
@@ -145,10 +165,17 @@ spec:
           resource_version_suffix = determine_resource_version_suffix(application_name)
           components = [process_component(c, resource_version_suffix) for c in raw_components]
 
+          labels = create_labels(
+              application_name=application_name,
+              commit_sha=os.environ["COMMIT_SHA"],
+              pipeline_run_name=os.environ["PIPELINE_RUN_NAME"],
+              product_version=product_version,
+          )
+
           snapshot = construct_snapshot(
               snapshot_name=snapshot_name,
-              pipeline_run_name=pipeline_run_name,
               namespace=namespace,
+              labels=labels,
               application_name=application_name,
               components=components
           )
