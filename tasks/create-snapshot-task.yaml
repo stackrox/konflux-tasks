@@ -113,7 +113,7 @@ spec:
               # created the Snapshot.
               "created-by-pipelinerun": pipeline_run_name,
 
-              # This corresponds to the label put by Konflux on its Snapshots. It is to efficient finding of Snapshots
+              # This corresponds to the label put by Konflux on its Snapshots. It is to efficiently find Snapshots
               # for a commit.
               "pac.test.appstudio.openshift.io/sha": commit_sha,
 
