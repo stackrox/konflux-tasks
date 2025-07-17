@@ -116,8 +116,10 @@ spec:
     - description: Bundle contents
       name: BUNDLE_CONTENTS
       value: $(tasks.get-bundle-info.results.BUNDLE_CONTENTS)
+
     workspaces:
     - name: git-auth
+
     finally:
     - name: slack-notification
       params:
@@ -152,7 +154,9 @@ spec:
         - name: kind
           value: task
         resolver: bundles
+
     tasks:
+
     - name: init
       params:
       - name: image-url
@@ -170,6 +174,7 @@ spec:
         - name: kind
           value: task
         resolver: bundles
+
     - name: clone-repository
       params:
       - name: url
@@ -196,6 +201,7 @@ spec:
       workspaces:
       - name: basic-auth
         workspace: git-auth
+
     - name: prefetch-dependencies
       params:
       - name: input
@@ -218,6 +224,7 @@ spec:
       workspaces:
       - name: git-basic-auth
         workspace: git-auth
+
     - name: build-container
       params:
       - name: IMAGE
@@ -244,6 +251,7 @@ spec:
       - input: $(tasks.init.results.build)
         operator: in
         values: ["true"]
+
     - name: build-source-image
       params:
       - name: BINARY_IMAGE
@@ -270,6 +278,7 @@ spec:
       - input: $(params.build-source-image)
         operator: in
         values: ["true"]
+
     - name: clair-scan
       params:
       - name: image-digest
@@ -289,6 +298,7 @@ spec:
       - input: $(params.skip-checks)
         operator: in
         values: ["false"]
+
     - name: sast-snyk-check
       params:
       - name: image-digest
@@ -312,6 +322,7 @@ spec:
       - input: $(params.skip-checks)
         operator: in
         values: ["false"]
+
     - name: clamav-scan
       params:
       - name: image-digest
@@ -331,6 +342,7 @@ spec:
       - input: $(params.skip-checks)
         operator: in
         values: ["false"]
+
     - name: sast-coverity-check
       params:
       - name: image-url
@@ -365,6 +377,7 @@ spec:
       - input: $(tasks.coverity-availability-check.results.STATUS)
         operator: in
         values: [success]
+
     - name: coverity-availability-check
       params:
       - name: image-digest
@@ -384,6 +397,7 @@ spec:
       - input: $(params.skip-checks)
         operator: in
         values: ["false"]
+
     - name: sast-shell-check
       params:
       - name: image-digest
@@ -407,6 +421,7 @@ spec:
       - input: $(params.skip-checks)
         operator: in
         values: ["false"]
+
     - name: sast-unicode-check
       params:
       - name: image-url
@@ -428,6 +443,7 @@ spec:
       - input: $(params.skip-checks)
         operator: in
         values: ["false"]
+
     - name: get-floating-tag
       description: Determines a floating tag that should be applied to the resulting images. The tasks image should be referenced by this floating tag and digest in the Tekton pipelines which use it.
       taskSpec:
@@ -469,6 +485,7 @@ spec:
               fi
             fi
             echo -n "${floating_tag}" | tee "$(results.FLOATING_TAG.path)"
+
     - name: generate-unique-tag
       description: Generates a unique tag to apply to the resulting images. Both $(params.output-image-tag) and $(tasks.get-floating-tag.results.FLOATING_TAG) are practically floating tags and will be moved when the pipeline gets re-triggered for the same commit or runs for subsequent commits (respectively). Once they both get moved and there's no more tag pointing at this image, Quay will garbage collect it. This creates a problem for images built in the main branch if they happen to get used in any of the repos - builds in these repos will fail once the image is gone. Therefore, this task generates a unique image tag for each build which won't get moved and so Quay will keep the image. There's ROX-27836 to prevent garbage piling up.
       taskSpec:
@@ -482,6 +499,7 @@ spec:
             #!/usr/bin/env bash
             set -euo pipefail
             echo -n "keep-image-$(params.output-image-tag)-$( date +%Y-%m-%d-%H-%M-%S.%N )" | tee "$(results.UNIQUE_TAG.path)"
+
     - name: apply-tags
       params:
       - name: IMAGE_URL
@@ -499,6 +517,7 @@ spec:
         - name: kind
           value: task
         resolver: bundles
+
     - name: rpms-signature-scan
       params:
       - name: image-url
@@ -518,6 +537,7 @@ spec:
       - input: $(params.skip-checks)
         operator: in
         values: ["false"]
+
     - name: get-bundle-info
       description: Prints info about the built tasks bundle.
       params:
@@ -550,6 +570,7 @@ spec:
             echo
             echo "Bundle contents:"
             tkn bundle list "$(params.BUNDLE_REF)" | tee "$(results.BUNDLE_CONTENTS.path)"
+
     - name: update-tasks-trust
       description: Updates the image which allows to trust built tasks in EC.
       params:
@@ -630,6 +651,7 @@ spec:
             echo
 
             echo ">>> Done"
+
     - name: apply-tags-trust
       params:
       - name: IMAGE_URL
