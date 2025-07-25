@@ -113,7 +113,8 @@ spec:
           sleep "${delay}"
         fi
 
-        if bq query \
+        if bq --nosync query \
+            --batch \
             --headless \
             --use_legacy_sql=false \
             --parameter="id::${ID}" \
