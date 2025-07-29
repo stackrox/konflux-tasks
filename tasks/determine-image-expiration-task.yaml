@@ -35,7 +35,7 @@ spec:
     - $(params.SOURCE_ARTIFACT)=/var/workdir/source
   - name: determine-image-expiration
     # We need git and toolbox image has it.
-    image: registry.access.redhat.com/ubi9/toolbox:latest@sha256:ea4ce8cb8f59cf1b0709f1606d7cab074c3806d4016964eedc0555410cb5dfeb
+    image: registry.access.redhat.com/ubi9/toolbox:latest@sha256:d7a4205c6935ee8c0940c6b8edee9ece87e39a22556f0348ff692d93541db5c0
     env:
     - name: SOURCE_BRANCH
       valueFrom:
