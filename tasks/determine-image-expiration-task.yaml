@@ -51,28 +51,21 @@ spec:
 
       set -euo pipefail
 
-      echo "Default image expiration: $(params.DEFAULT_IMAGE_EXPIRES_AFTER)"
+      IMAGE_EXPIRES_AFTER="$(params.DEFAULT_IMAGE_EXPIRES_AFTER)"
+      echo "Default image expiration: ${IMAGE_EXPIRES_AFTER}"
       echo "SOURCE_BRANCH: ${SOURCE_BRANCH}"
       echo "TARGET_BRANCH: ${TARGET_BRANCH}"
 
       # TODO(ROX-28001): Update the expiration logic for -fast releases.
 
-      # Normalize branch names because Konflux sometimes prepends refs/heads/ and sometimes doesn't.
-      # Similarly, we don't want to run into issues when Konflux puts refs/tags/ in one and forgets about the other.
-      SOURCE_BRANCH_SANITIZED="${SOURCE_BRANCH#refs/heads/}"
-      TARGET_BRANCH_SANITIZED="${TARGET_BRANCH#refs/heads/}"
-      SOURCE_BRANCH_SANITIZED="${SOURCE_BRANCH_SANITIZED#refs/tags/}"
-      TARGET_BRANCH_SANITIZED="${TARGET_BRANCH_SANITIZED#refs/tags/}"
-
-      if [[ "${SOURCE_BRANCH_SANITIZED}" == "${TARGET_BRANCH_SANITIZED}" && \
-        -n "$(git tag --points-at | grep -vF -- '-nightly-')" ]]; then
-        # The condition above reads as: this is not a PR and there's a git tag which is not nightly.
-        # We don't check for `refs/tags/*` in SOURCE|TARGET_BRANCH because it won't be there when the tagged build is
-        # re-triggered with /test or /retest comment.
-        echo "This is a tagged build and not a nightly. The images won't expire. IMAGE_EXPIRES_AFTER will be empty."
+      if [[ "${SOURCE_BRANCH}" == *konflux-release-like* ]]; then
+        >&2 echo "This looks like a PR branch containing the magic string. Images won't expire."
         IMAGE_EXPIRES_AFTER=""
-      else
-        IMAGE_EXPIRES_AFTER="$(params.DEFAULT_IMAGE_EXPIRES_AFTER)"
+      fi
+
+      if grep -qE '^((refs/heads/)?release-[0-9a-z]+\.[0-9a-z]+|refs/tags/[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?)$' <<< "${TARGET_BRANCH}"; then
+        >&2 echo "This looks like a release branch or release tag push, or PR targeting the release branch. Images won't expire."
+        IMAGE_EXPIRES_AFTER=""
       fi
 
       echo -n "${IMAGE_EXPIRES_AFTER}" | tee "$(results.IMAGE_EXPIRES_AFTER.path)"
