@@ -204,7 +204,7 @@ spec:
         - name: name
           value: prefetch-dependencies-oci-ta
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-prefetch-dependencies-oci-ta:0.2@sha256:22290579c9fe0b5c1689bb9023b3eddec73c285b680226d9f460346ae849a2cb
+          value: quay.io/konflux-ci/tekton-catalog/task-prefetch-dependencies-oci-ta:0.2@sha256:05551e144d090844903d61893a383fa4dc69ab563797f03ffaab0f8624bf530d
         - name: kind
           value: task
         resolver: bundles
@@ -277,7 +277,7 @@ spec:
         - name: name
           value: clair-scan
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-clair-scan:0.2@sha256:893ffa3ce26b061e21bb4d8db9ef7ed4ddd4044fe7aa5451ef391034da3ff759
+          value: quay.io/konflux-ci/tekton-catalog/task-clair-scan:0.2@sha256:076d5cde62b55bbfcdda2b4782392256bbda5ad38f839013b4330b3aba70a973
         - name: kind
           value: task
         resolver: bundles
