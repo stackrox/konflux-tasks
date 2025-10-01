@@ -36,7 +36,7 @@ spec:
   - name: update-bigquery
     # GCP CLIs aren't available in Quay or in the Red Hat Registry. If the availability of Google's registry becomes a
     # problem for our pipelines stability, we can set up image mirroring.
-    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:stable@sha256:ec253a64fbf34d9c0a2e3842d86d8660e83f3fd0e86071b388edb5e9c3327370
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:stable@sha256:f0fc3d13be3b184c4794b6d72a7ee857473732aaf74cd5ecc09ae9fcddf51a1e
     volumeMounts:
     - name: gcp-service-account
       mountPath: /mnt/gcp-service-account
