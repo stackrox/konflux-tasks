@@ -122,6 +122,9 @@ spec:
 
               # This corresponds to image tags and version string embedded in the product's executables.
               "acs-product-version": product_version,
+
+              # This instructs Konflux to start the mentioned IntegrationTestScenario right away.
+              "test.appstudio.openshift.io/run": "acs-vulns-misha-test",
           }
 
 
