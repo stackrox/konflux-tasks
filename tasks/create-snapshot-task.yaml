@@ -187,5 +187,5 @@ spec:
           main()
 
   - name: create-snapshot
-    image: registry.redhat.io/openshift4/ose-cli-rhel9@sha256:5d5bd5c125a3713986e2d3c37b65c442fbea9f47f80c01e07b35a51092274cfc
+    image: registry.redhat.io/openshift4/ose-cli-rhel9@sha256:0b7bf6d61aef900a96494059038d2bb947c9a2f112f981edc9beffc1b889ea33
     script: oc create -f snapshot.json
