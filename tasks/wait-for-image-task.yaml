@@ -11,6 +11,8 @@ spec:
   results:
   - name: IMAGE_DIGEST
     description: Image digest in the format `sha256:abcdef0123`.
+  # TODO: drop `GIT_REF` and `GIT_REPO` results after `create-snapshot-from-bundle` is rolled out to all release
+  # branches and there are no more active PRs that depend on `create-snapshot`.
   - name: GIT_REF
     description: Git commit for the image's source code from `vcs-ref` image label.
   - name: GIT_REPO

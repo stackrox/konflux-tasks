@@ -1,3 +1,5 @@
+# TODO: this task can be deleted after `create-snapshot-from-bundle` is rolled out to all release branches and there
+# are no more active PRs using `create-snapshot`.
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
