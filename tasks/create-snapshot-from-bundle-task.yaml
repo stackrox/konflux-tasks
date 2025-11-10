@@ -9,7 +9,7 @@ spec:
 
   params:
   - name: COMPONENT_MAPPINGS
-    description: JSON string with the list of components and their internal and external repos.
+    description: JSON string with the list of components and their internal and external image repos.
     type: string
   - name: OPERATOR_BUNDLE_IMAGE
     description: Pullspec (e.g. repo and tag or repo and digest) of the operator bundle image.
