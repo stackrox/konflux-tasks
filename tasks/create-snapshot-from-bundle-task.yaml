@@ -1,0 +1,383 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: create-snapshot-from-bundle
+
+spec:
+
+  description: Creates Snapshot based on the images mentioned in the operator bundle CSV.
+
+  params:
+  - name: COMPONENT_MAPPINGS
+    description: JSON string with the list of components and their internal and external image repos.
+    type: string
+  - name: OPERATOR_BUNDLE_IMAGE
+    description: Pullspec (e.g. repo and tag or repo and digest) of the operator bundle image.
+    type: string
+  - name: PRODUCT_VERSION
+    description: Product version to record as part of the Snapshot's name to be able to identify snapshots more easily.
+      Pass here the result from determine-image-tag for the main image.
+    type: string
+  - name: INTEGRATION_TEST_SCENARIO
+    description: Optional. Name of the IntegrationTestScenario to be triggered for the created Snapshot. Should not
+      include the version suffix.
+    type: string
+    default: ""
+
+  results:
+  - name: SNAPSHOT_NAME
+    description: Name of the snapshot created by this task.
+
+  volumes:
+  - name: workdir
+    emptyDir: { }
+
+  stepTemplate:
+    volumeMounts:
+    - mountPath: /var/workdir
+      name: workdir
+    workingDir: /var/workdir
+
+  steps:
+
+  - name: render-snapshot
+    image: quay.io/konflux-ci/release-service-utils:latest@sha256:89cf5d3a3defa731ef88cbbbd5589f85193af6ec040a3f3a07c250a30b222ad7
+    env:
+    - name: COMPONENT_MAPPINGS
+      value: $(params.COMPONENT_MAPPINGS)
+    - name: OPERATOR_BUNDLE_IMAGE
+      value: $(params.OPERATOR_BUNDLE_IMAGE)
+    - name: PRODUCT_VERSION
+      value: $(params.PRODUCT_VERSION)
+    - name: INTEGRATION_TEST_SCENARIO
+      value: $(params.INTEGRATION_TEST_SCENARIO)
+    - name: SNAPSHOT_NAME_RESULT_PATH
+      value: $(results.SNAPSHOT_NAME.path)
+    - name: NAMESPACE
+      # E.g. "rh-acs-tenant"
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    - name: APPLICATION_NAME
+      # E.g. "acs"
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['appstudio.openshift.io/application']
+    - name: COMMIT_SHA
+      # E.g. "f72251b8c022ccb0eff1d5a64fdf2264ac8b8125"
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['pipelinesascode.tekton.dev/sha']
+    - name: PIPELINE_RUN_NAME
+      # E.g. "operator-bundle-on-push-94kpm"
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.labels['tekton.dev/pipelineRun']
+    - name: INSTALLATION_ID
+      # E.g. "41511273"
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.annotations['pipelinesascode.tekton.dev/installation-id']
+    - name: URL_ORG
+      # E.g. "stackrox"
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.annotations['pipelinesascode.tekton.dev/url-org']
+    - name: URL_REPOSITORY
+      # E.g. "collector"
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.annotations['pipelinesascode.tekton.dev/url-repository']
+    script: |
+      #!/usr/bin/env python3
+
+      import datetime
+      import json
+      import logging
+      import os
+      import re
+      import subprocess
+      import sys
+      import time
+      import yaml
+      from pathlib import Path
+      from types import SimpleNamespace as Record  # Aliased as Record because SimpleNamespace name may look confusing.
+
+      log = logging.getLogger(__name__)
+
+
+      def main():
+          logging.basicConfig(level=logging.INFO,
+                              format="%(asctime)s - %(levelname)s - %(message)s",
+                              datefmt="%Y-%m-%d %H:%M:%S")
+
+          args = read_args()
+
+          version_suffix = determine_version_suffix(args.application_name)
+
+          components = prepare_components(args.operator_bundle_image, args.component_mappings, version_suffix)
+
+          snapshot_name = generate_snapshot_name(args.application_name, args.product_version)
+
+          labels = create_labels(args)
+
+          request_integration_test(labels, args.integration_test_scenario, version_suffix)
+
+          annotations = create_annotations(args)
+
+          snapshot = construct_snapshot(
+              snapshot_name=snapshot_name,
+              namespace=args.namespace,
+              labels=labels,
+              annotations=annotations,
+              application_name=args.application_name,
+              components=components
+          )
+
+          snapshot_file = Path("snapshot.json")
+          with open(snapshot_file, "w", encoding="utf-8") as f:
+              json.dump(snapshot, f, indent=2)
+          log.info(f"Snapshot contents written to {snapshot_file}.")
+
+          with open(args.snapshot_name_result_path, "w", encoding="utf-8") as f:
+              f.write(snapshot["metadata"]["name"])
+          log.info(f"Snapshot name written to {args.snapshot_name_result_path}.")
+
+          log.info("Done.")
+
+
+      def read_args():
+          """
+          Reads program arguments passed via environment variables to a struct.
+          """
+          component_mappings_raw = json.loads(os.environ["COMPONENT_MAPPINGS"])
+          component_mappings = [Record(
+              component=x["component"],
+              external_repo=x["externalRepo"],
+              internal_repo=x["internalRepo"],
+          ) for x in component_mappings_raw]
+
+          return Record(
+              component_mappings=component_mappings,
+              operator_bundle_image=os.environ["OPERATOR_BUNDLE_IMAGE"],
+              product_version=os.environ["PRODUCT_VERSION"],
+              integration_test_scenario=os.getenv("INTEGRATION_TEST_SCENARIO", default=None),
+              snapshot_name_result_path=os.environ["SNAPSHOT_NAME_RESULT_PATH"],
+              namespace=os.environ["NAMESPACE"],
+              application_name=os.environ["APPLICATION_NAME"],
+              commit_sha=os.environ["COMMIT_SHA"],
+              pipeline_run_name=os.environ["PIPELINE_RUN_NAME"],
+              installation_id=os.environ["INSTALLATION_ID"],
+              url_org=os.environ["URL_ORG"],
+              url_repository=os.environ["URL_REPOSITORY"],
+          )
+
+
+      def determine_version_suffix(application_name):
+          """
+          If application_name has a suffix like "-4-9" in "acs-4-9", this function returns that. Otherwise, an empty string.
+          """
+          match = re.search(r"(?P<version>-\d+-\d+)$", application_name)
+          if match:
+              return match.group("version")
+          return ""
+
+
+      def prepare_components(bundle_image, component_mappings, version_suffix):
+          """
+          Gets all related images from CSV plus bundle image, crawls their labels and prepares that all as a list of
+          components for the Snapshot.
+          """
+          log.info(f"Looking up digest of {bundle_image} ...")
+          bundle_image_with_digest = with_retries(lambda: subprocess.run(
+              ["skopeo", "inspect", "--no-tags",
+               "--format", "{{.Name}}@{{.Digest}}",
+               "docker://" + bundle_image],
+              check=True, encoding="utf-8", stdout=subprocess.PIPE
+          )).stdout.strip()
+
+          log.info(f"Pulling and unpacking bundle {bundle_image_with_digest} ...")
+          with_retries(lambda: subprocess.run(["opm", "alpha", "bundle", "unpack", bundle_image_with_digest], check=True))
+
+          csv_file = Path("manifests/rhacs-operator.clusterserviceversion.yaml")
+          log.info(f"Loading CSV file {csv_file} ...")
+          csv_data = yaml.safe_load(csv_file.read_text(encoding="utf-8"))
+
+          log.info("Collecting image references ...")
+          images = []
+          images.append(bundle_image_with_digest)  # The bundle itself
+          for img in csv_data["spec"]["relatedImages"]:  # Operator and operands, i.e. product images.
+              images.append(img["image"])
+
+          for img in images:
+              if "@sha256:" not in img:
+                  # Not that it's difficult to handle tagged images, it just adds more code.
+                  raise ValueError(f"Image {img} doesn't have a digest, this program can't handle those.")
+
+          log.info("Mapping images to components in internal repos ...")
+          components = [map_to_component_and_internal_repo(img, component_mappings) for img in images]
+
+          for c in components:
+              c["name"] += version_suffix
+
+          log.info("Loading revision and url from image labels ...")
+          for c in components:
+              git_info = get_relevant_image_labels(c["containerImage"])
+              c["source"] = {"git": git_info}
+
+          return components
+
+
+      def with_retries(func):
+          """
+          Runs function with retries.
+          """
+          MAX_TRIES = 4
+          DELAY = 3
+          for attempt in range(MAX_TRIES):
+              try:
+                  return func()
+              except Exception as e:
+                  if attempt + 1 == MAX_TRIES:
+                      raise
+                  log.warning(f"Got the following exception during attempt {attempt + 1}. Will retry after {DELAY} seconds.",
+                              exc_info=e)
+                  time.sleep(DELAY)
+
+
+      def map_to_component_and_internal_repo(image, repo_mappings):
+          """
+          Replaces external repo (registry.redhat.io/advanced-cluster-security/*) with internal repo
+          (quay.io/rhacs-eng/release-*) and matches the component name.
+          """
+          for mapping in repo_mappings:
+              result = ""
+
+              if image.startswith(mapping.internal_repo + "@"):
+                  # The image is already in the internal repo, no mapping is needed.
+                  result = image
+
+              if image.startswith(mapping.external_repo + "@"):  # Repo + digest
+                  result = mapping.internal_repo + "@" + image.removeprefix(mapping.external_repo + "@")
+
+              if result != "":
+                  return {
+                      "name": mapping.component,
+                      "containerImage": result,
+                  }
+          raise RuntimeError(f"Don't have repo mapping for image {image}")
+
+
+      def get_relevant_image_labels(image):
+          """
+          Loads image manifest from the repo with skopeo and reads out git info from labels required for the Snapshot.
+          """
+          log.info(f"Getting labels for {image} ...")
+
+          separator = "|"
+          stdout = with_retries(
+              lambda: subprocess.run(["skopeo", "inspect", "--no-tags",
+                                      "--format",
+                                      '{{index .Labels "source-location"}}' + separator + '{{index .Labels "vcs-ref"}}',
+                                      "docker://" + image],
+                                     check=True, encoding="utf-8", stdout=subprocess.PIPE)).stdout.strip()
+
+          source_location, vcs_ref = stdout.split(separator, maxsplit=1)
+          if not source_location:
+              raise ValueError("source-location label must not be empty")
+          if not vcs_ref:
+              raise ValueError("vcs-ref label must not be empty")
+
+          return {"url": source_location, "revision": vcs_ref}
+
+
+      def generate_snapshot_name(prefix, product_version):
+          # The timestamp is added to the Snapshot name so that we can differentiate Snapshots from rebuilds of the same commit or tag.
+          timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+          product_version_sanitized = re.sub(r"[^a-zA-Z0-9-]", "-", product_version)
+          return f"{prefix}--{product_version_sanitized}--{timestamp}".lower()[:63]
+
+
+      def create_labels(args):
+          return {
+              # Matches application name label put by Konflux on its Snapshots. Can be handy for searching by label.
+              "appstudio.openshift.io/application": args.application_name,
+
+              # We don't set the appstudio's default pipelinerun label's value to the PipelineRun name because this inhibits
+              # the OOTB creation of a Snapshot in Konflux which in turn may have undesired effects, e.g. some component's
+              # image not being promoted.
+              # We still add the label because otherwise, our custom Snapshot will not load in UI.
+              "appstudio.openshift.io/build-pipelinerun": "",
+
+              # The following is a custom label, and we add it to help ourselves find out which PipelineRun created this
+              # Snapshot.
+              "created-by-pipelinerun": args.pipeline_run_name,
+
+              # This corresponds to the label put by Konflux on its Snapshots. It is to efficiently find Snapshots for a
+              # commit.
+              "pac.test.appstudio.openshift.io/sha": args.commit_sha,
+
+              # This is to allow differentiating our custom Snapshots from the ones created by Konflux.
+              "acs-style-snapshot": "true",
+
+              # This corresponds to image tags and version string embedded in the product's executables.
+              "acs-product-version": args.product_version,
+
+              # These labels are needed for the integration test for this Snapshot to show up in GitHub CI (checks) status.
+              "pac.test.appstudio.openshift.io/url-org": args.url_org,
+              "pac.test.appstudio.openshift.io/url-repository": args.url_repository,
+              "test.appstudio.openshift.io/type": "component",
+          }
+
+
+      def request_integration_test(labels, test_name, version_suffix):
+          if test_name:
+              suffixed_name = test_name + version_suffix
+              log.info(f"Labeling the Snapshot to request Konflux to run {suffixed_name} IntegrationTestScenario for it.")
+              labels["test.appstudio.openshift.io/run"] = suffixed_name
+          else:
+              log.info("No specific IntegrationTestScenario was requested.")
+
+
+      def create_annotations(args):
+          return {
+              # These annotations are needed for the integration test for this Snapshot to show up in GitHub CI (checks) status.
+              # See https://redhat-internal.slack.com/archives/C04PZ7H0VA8/p1761584706230079
+              "pac.test.appstudio.openshift.io/git-provider": "github",
+              "pac.test.appstudio.openshift.io/installation-id": args.installation_id,
+              "pac.test.appstudio.openshift.io/sha": args.commit_sha,
+              "pac.test.appstudio.openshift.io/url-org": args.url_org,
+              "pac.test.appstudio.openshift.io/url-repository": args.url_repository,
+          }
+
+
+      def construct_snapshot(
+              snapshot_name,
+              namespace,
+              labels,
+              annotations,
+              application_name,
+              components,
+      ):
+          return {
+              "apiVersion": "appstudio.redhat.com/v1alpha1",
+              "kind": "Snapshot",
+              "metadata": {
+                  "name": snapshot_name,
+                  "namespace": namespace,
+                  "labels": labels,
+                  "annotations": annotations,
+              },
+              "spec": {
+                  "application": application_name,
+                  "components": components
+              }
+          }
+
+
+      if __name__ == "__main__":
+          main()
+
+  - name: create-snapshot
+    image: registry.redhat.io/openshift4/ose-cli-rhel9@sha256:0b7bf6d61aef900a96494059038d2bb947c9a2f112f981edc9beffc1b889ea33
+    script: oc create -f snapshot.json
