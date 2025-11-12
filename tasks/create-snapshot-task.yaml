@@ -26,7 +26,7 @@ spec:
     workingDir: /var/workdir
   steps:
   - name: render-snapshot
-    image: registry.access.redhat.com/ubi9:latest@sha256:dec374e05cc13ebbc0975c9f521f3db6942d27f8ccdf06b180160490eef8bdbc
+    image: registry.access.redhat.com/ubi9:latest@sha256:5ff7f5e56f4826ca8413765e57f8a5bad4bf42b73f958f3d0c2668a0f870316c
     env:
     - name: COMPONENTS
       value: $(params.COMPONENTS)
@@ -189,5 +189,5 @@ spec:
           main()
 
   - name: create-snapshot
-    image: registry.redhat.io/openshift4/ose-cli-rhel9@sha256:64867e62dbbafe779cdb4233b7c7c8686932717177e5825058e23beccbb3207b
+    image: registry.redhat.io/openshift4/ose-cli-rhel9@sha256:5f1fc557bef7e06ad285e94e20e4c1bb4f2b8b31c6239d195fd93ff02a530f9c
     script: oc create -f snapshot.json
