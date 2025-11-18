@@ -197,9 +197,11 @@ spec:
           )).stdout.strip()
 
           log.info(f"Pulling and unpacking bundle {bundle_image_with_digest} ...")
-          with_retries(lambda: subprocess.run(["opm", "alpha", "bundle", "unpack", bundle_image_with_digest], check=True))
+          with_retries(
+              lambda: subprocess.run(["opm", "alpha", "bundle", "unpack", bundle_image_with_digest, "--out", "./bundle"],
+                                     check=True))
 
-          csv_file = Path("manifests/rhacs-operator.clusterserviceversion.yaml")
+          csv_file = Path("./bundle/manifests/rhacs-operator.clusterserviceversion.yaml")
           log.info(f"Loading CSV file {csv_file} ...")
           csv_data = yaml.safe_load(csv_file.read_text(encoding="utf-8"))
 
