@@ -528,7 +528,7 @@ spec:
         - name: BUNDLE_CONTENTS
         steps:
         - name: get-bundle-info
-          image: quay.io/konflux-ci/appstudio-utils:latest@sha256:2b004dc4b55529823e8994e33df0d80e3d1de610e116f830e2b6d5d6e5539186
+          image: quay.io/konflux-ci/appstudio-utils:latest@sha256:74dd4fef3c2e050eb84032a6526cecbe97582089585e8fda5e893029ec193619
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
@@ -566,7 +566,7 @@ spec:
           description: Image digest of the trust bundle artifact
         steps:
         - name: update-tasks-trust
-          image: quay.io/konflux-ci/appstudio-utils:latest@sha256:2b004dc4b55529823e8994e33df0d80e3d1de610e116f830e2b6d5d6e5539186
+          image: quay.io/konflux-ci/appstudio-utils:latest@sha256:74dd4fef3c2e050eb84032a6526cecbe97582089585e8fda5e893029ec193619
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
