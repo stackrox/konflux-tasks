@@ -68,6 +68,11 @@ spec:
       valueFrom:
         fieldRef:
           fieldPath: metadata.labels['pipelinesascode.tekton.dev/sha']
+    - name: TARGET_BRANCH
+      # E.g. "refs/tags/1.0.0" or "refs/heads/master"
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.annotations['pipelinesascode.tekton.dev/branch']
     - name: PIPELINE_RUN_NAME
       # E.g. "operator-bundle-on-push-94kpm"
       valueFrom:
@@ -166,6 +171,7 @@ spec:
               namespace=os.environ["NAMESPACE"],
               application_name=os.environ["APPLICATION_NAME"],
               commit_sha=os.environ["COMMIT_SHA"],
+              target_branch=os.environ["TARGET_BRANCH"],
               pipeline_run_name=os.environ["PIPELINE_RUN_NAME"],
               installation_id=os.environ["INSTALLATION_ID"],
               url_org=os.environ["URL_ORG"],
@@ -342,7 +348,16 @@ spec:
 
 
       def create_annotations(args):
-          return {
+          annotations = {}
+          # We want to keep the snapshot for tags that are not nightly tags.
+          regex = r"^refs/tags/(?!.*-nightly-).*"
+          if re.search(regex, args.target_branch):
+              log.info("Annotating the Snapshot for this tagged build to protect it from deletion.")
+              annotations["test.appstudio.openshift.io/keep-snapshot"] = "true"
+          else:
+              log.info("Not protecting the Snapshot from deletion, as not a tagged build or a nightly tag.")
+
+          annotations.update({
               # These annotations are needed for the integration test for this Snapshot to show up in GitHub CI (checks) status.
               # See https://redhat-internal.slack.com/archives/C04PZ7H0VA8/p1761584706230079
               "pac.test.appstudio.openshift.io/git-provider": "github",
@@ -350,7 +365,8 @@ spec:
               "pac.test.appstudio.openshift.io/sha": args.commit_sha,
               "pac.test.appstudio.openshift.io/url-org": args.url_org,
               "pac.test.appstudio.openshift.io/url-repository": args.url_repository,
-          }
+          })
+          return annotations
 
 
       def construct_snapshot(
