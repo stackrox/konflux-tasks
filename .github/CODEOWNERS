@@ -2,4 +2,4 @@
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners#about-code-owners
 # This will automatically assign a team / people as reviewers for PRs based on the files changed within the PR.
 
-*  @stackrox/rhtap-maintainers
+*  @stackrox/konflux-maintainers
