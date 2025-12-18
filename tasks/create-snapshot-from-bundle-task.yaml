@@ -349,7 +349,7 @@ spec:
 
       def create_annotations(args):
           annotations = {
-              # These are needed for the integration test for this Snapshot to show up in GitHub CI (checks) status.
+              # These annotations are needed for the integration test for this Snapshot to show up in GitHub CI (checks) status.
               # See https://redhat-internal.slack.com/archives/C04PZ7H0VA8/p1761584706230079
               "pac.test.appstudio.openshift.io/git-provider": "github",
               "pac.test.appstudio.openshift.io/installation-id": args.installation_id,
