@@ -131,11 +131,11 @@ spec:
         value: ':x: `{{event_type}}` pipeline for <https://konflux-ui.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com/ns/$(context.pipelineRun.namespace)/pipelinerun/$(context.pipelineRun.name)|$(context.pipelineRun.name)> (`$(params.output-image-repo)`, revision <$(params.git-url)/commit/$(params.revision)|$(params.revision)>) has failed.'
       - name: key-name
         value: 'acs-konflux-notifications'
-      # when:
-      #   # Run when any task has Failed
-      # - input: $(tasks.status)
-      #   operator: in
-      #   values: ["Failed"]
+      when:
+        # Run when any task has Failed
+      - input: $(tasks.status)
+        operator: in
+        values: ["Failed"]
       taskRef:
         params:
         - name: name
