@@ -425,7 +425,7 @@ spec:
           description: Floating tag to apply to the resulting images.
         steps:
         - name: get-floating-tag
-          image: registry.redhat.io/ubi9-minimal:latest@sha256:6fc28bcb6776e387d7a35a2056d9d2b985dc4e26031e98a2bd35a7137cd6fd71
+          image: registry.redhat.io/ubi9-minimal:latest@sha256:90bd85dcd061d1ad6dbda70a867c41958c04a86462d05c631f8205e8870f28f8
           env:
           - name: SOURCE_BRANCH
             valueFrom:
@@ -467,7 +467,7 @@ spec:
           description: Unique tag to apply to the resulting images.
         steps:
         - name: generate-unique-tag
-          image: registry.redhat.io/ubi9-minimal:latest@sha256:6fc28bcb6776e387d7a35a2056d9d2b985dc4e26031e98a2bd35a7137cd6fd71
+          image: registry.redhat.io/ubi9-minimal:latest@sha256:90bd85dcd061d1ad6dbda70a867c41958c04a86462d05c631f8205e8870f28f8
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
@@ -528,7 +528,7 @@ spec:
         - name: BUNDLE_CONTENTS
         steps:
         - name: get-bundle-info
-          image: quay.io/konflux-ci/appstudio-utils:latest@sha256:e7a8b97fd0f36e5458c5a7ef604f7871858c42293d43cd904a6c9fdb786ac167
+          image: quay.io/konflux-ci/appstudio-utils:latest@sha256:98082f1c97b3f6183ab10fcd1fd96f44a5a5c134be716b67b2f4da495d196d4a
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
@@ -566,7 +566,7 @@ spec:
           description: Image digest of the trust bundle artifact
         steps:
         - name: update-tasks-trust
-          image: quay.io/konflux-ci/appstudio-utils:latest@sha256:e7a8b97fd0f36e5458c5a7ef604f7871858c42293d43cd904a6c9fdb786ac167
+          image: quay.io/konflux-ci/appstudio-utils:latest@sha256:98082f1c97b3f6183ab10fcd1fd96f44a5a5c134be716b67b2f4da495d196d4a
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
