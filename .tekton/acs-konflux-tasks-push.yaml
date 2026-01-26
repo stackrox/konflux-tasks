@@ -605,11 +605,21 @@ spec:
             #
             if [[ "${trust_image_remote_tag_name}" != "null" ]]; then
               echo ">>> ${trust_image_ref} exists and will be updated"
+              echo "The ec command is:
+              ec --debug track bundle --freshen \
+                --bundle $(params.BUNDLE_REF) \
+                --input oci:${trust_image_ref} --replace
+              "
               ec --debug track bundle --freshen \
                 --bundle "$(params.BUNDLE_REF)" \
                 --input "oci:${trust_image_ref}" --replace
             else
               echo ">>> ${trust_image_ref} does not exist and will be pushed"
+              echo "The ec command is:
+              ec --debug track bundle --freshen \
+                --bundle $(params.BUNDLE_REF) \
+                --output oci:${trust_image_ref}
+              "
               ec --debug track bundle --freshen \
                 --bundle "$(params.BUNDLE_REF)" \
                 --output "oci:${trust_image_ref}"
