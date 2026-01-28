@@ -54,7 +54,7 @@ spec:
       makefile_target="$(params.MAKEFILE_TARGET)"
 
       # Basic protection against running an arbitrary target.
-      allowed_targets="collector-tag|scanner-tag"
+      allowed_targets="collector-tag|scanner-tag|fact-tag"
       if [[ "|${allowed_targets}|" != *"|${makefile_target}|"* ]]; then
         >&2 echo "Error: provided MAKEFILE_TARGET ${makefile_target} is not one of the allowed targets ${allowed_targets}"
         exit 2
