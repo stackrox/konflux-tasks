@@ -6,7 +6,7 @@ Tasks themselves are in `tasks/` directory.
 
 `.tekton/` directory has the pipeline to package and push tasks as Tekton bundle OCI image for use in pipelines.
 
-Tasks are pushed to [quay.io/rhacs-eng/konflux-tasks](https://quay.io/repository/rhacs-eng/konflux-tasks) repo.  
+Tasks are pushed to [quay.io/rhacs-eng/konflux-tasks](https://quay.io/repository/rhacs-eng/konflux-tasks) repo.
 Tasks trust data for inclusion in EC policy is pushed to [quay.io/rhacs-eng/konflux-tasks-trust](https://quay.io/repository/rhacs-eng/konflux-tasks-trust).
 
 ## Development
@@ -20,3 +20,4 @@ Consuming repos are:
 * <https://github.com/stackrox/collector>
 * <https://github.com/stackrox/scanner>
 * <https://github.com/stackrox/operator-index/>
+* <https://github.com/stackrox/fact>
