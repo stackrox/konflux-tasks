@@ -41,7 +41,7 @@ spec:
   steps:
 
   - name: render-snapshot
-    image: quay.io/konflux-ci/release-service-utils:latest@sha256:35feaea591a4d5bea6f9c2a4f01e88ec17185e1ba5148a2884479b45259377cb
+    image: quay.io/konflux-ci/release-service-utils:latest@sha256:66a9265f7e767058f3632124ab39280b62039200da428657fb515d072566fe50
     env:
     - name: COMPONENT_MAPPINGS
       value: $(params.COMPONENT_MAPPINGS)
