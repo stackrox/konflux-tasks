@@ -36,11 +36,15 @@ spec:
 
       echo "Waiting for image $(params.IMAGE) to become available..."
       while true; do
-        raw_info="$(skopeo inspect \
+        if ! raw_info="$(skopeo inspect \
           --retry-times 10 \
           --format '{{.Digest}} {{ index .Labels "vcs-ref" }} {{ index .Labels "source-location" }}' \
           --no-tags \
-          "docker://$(params.IMAGE)")"
+          "docker://$(params.IMAGE)" 2>/dev/null)"; then
+          >&2 echo "INFO: Image not found yet: $(params.IMAGE)."
+          sleep 1m
+          continue
+        fi
 
         # Turning raw_info into an array for easier handling.
         infos=( $raw_info )
@@ -49,12 +53,12 @@ spec:
           exit 1
         fi
 
-        if [[ "${params.ENABLE_GIT_REF_CHECK}" == "true" ]]; then
+        if [[ "$(params.ENABLE_GIT_REF_CHECK)" == "true" ]]; then
           if [[ "${infos[1]}" == "$(params.DESIRED_GIT_REF)" ]]; then
-            >&2 echo "INFO: Git reference check is enabled and the found image $(params.IMAGE)${infos[0]} is built for the expected commit ($(params.DESIRED_GIT_REF))."
+            >&2 echo "INFO: Git reference check is enabled and the found image $(params.IMAGE)@${infos[0]} is built for the expected commit ($(params.DESIRED_GIT_REF))."
             break
           else
-            >&2 echo "WARNING: The found image $(params.IMAGE)${infos[0]} seems to be built for a different commit (${infos[1]}) than the one expected ($(params.DESIRED_GIT_REF)). This could happen for a tagged build when a git tag was moved and newly-triggered pipelines haven't finished yet. This task will keep waiting for the image with the matching tag to appear."
+            >&2 echo "WARNING: The found image $(params.IMAGE)@${infos[0]} seems to be built for a different commit (${infos[1]}) than the one expected ($(params.DESIRED_GIT_REF)). This could happen for a tagged build when a git tag was moved and newly-triggered pipelines haven't finished yet. This task will keep waiting for the image with the matching tag to appear."
             # Continue waiting
             sleep 1m
           fi
