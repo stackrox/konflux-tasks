@@ -9,9 +9,14 @@ spec:
     description: Image reference.
     type: string
   - name: DESIRED_GIT_REF
+    description: Git commit of the current pipeline.
     valueFrom:
       fieldRef:
         fieldPath: metadata.labels['pipelinesascode.tekton.dev/sha']
+  - name: ENABLE_GIT_REF_CHECK
+    description: Whether to check if the image was built for the same commit as the one specified in the `DESIRED_GIT_REF` parameter.
+    type: string
+    default: "true"
   results:
   - name: IMAGE_DIGEST
     description: Image digest in the format `sha256:abcdef0123`.
@@ -44,17 +49,23 @@ spec:
           exit 1
         fi
 
-        if [[ "${infos[1]}" == "$(params.DESIRED_GIT_REF)" ]]; then
-          break
+        if [[ "${params.ENABLE_GIT_REF_CHECK}" == "true" ]]; then
+          if [[ "${infos[1]}" == "$(params.DESIRED_GIT_REF)" ]]; then
+            >&2 echo "INFO: Git reference check is enabled and the found image $(params.IMAGE)${infos[0]} is built for the expected commit ($(params.DESIRED_GIT_REF))."
+            break
+          else
+            >&2 echo "WARNING: The found image $(params.IMAGE)${infos[0]} seems to be built for a different commit (${infos[1]}) than the one expected ($(params.DESIRED_GIT_REF)). This could happen for a tagged build when a git tag was moved and newly-triggered pipelines haven't finished yet. This task will keep waiting for the image with the matching tag to appear."
+            # Continue waiting
+            sleep 1m
+          fi
         else
-          >&2 echo "WARNING: The found image $(params.IMAGE)${infos[0]} seems to be built for a different commit (${infos[1]}) than the one expected ($(params.DESIRED_GIT_REF)). This could happen for a tagged build when a git tag was moved and newly-triggered pipelines haven't finished yet. This task will keep waiting for the image with the matching tag to appear."
-          # Continue waiting
-          sleep 1m
+          >&2 echo "INFO: Git reference check is disabled. Accepting this image."
+          break
         fi
       done
 
       echo "Image $(params.IMAGE) found."
-      
+
       # Output
       echo -n "${infos[0]}" | tee "$(results.IMAGE_DIGEST.path)"
       echo
