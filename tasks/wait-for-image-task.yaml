@@ -47,7 +47,7 @@ spec:
         if [[ "${infos[1]}" == "$(params.DESIRED_GIT_REF)" ]]; then
           break
         else
-          >&2 echo "ERROR: The Git reference of the image $(params.IMAGE) does not match the desired Git reference $(params.DESIRED_GIT_REF)."
+          >&2 echo "WARNING: The found image $(params.IMAGE)${infos[0]} seems to be built for a different commit (${infos[1]}) than the one expected ($(params.DESIRED_GIT_REF)). This could happen for a tagged build when a git tag was moved and newly-triggered pipelines haven't finished yet. This task will keep waiting for the image with the matching tag to appear."
           # Continue waiting
           sleep 1m
         fi
