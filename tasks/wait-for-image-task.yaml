@@ -42,6 +42,7 @@ spec:
           --no-tags \
           "docker://$(params.IMAGE)" 2>/dev/null)"; then
           >&2 echo "INFO: Image not found yet: $(params.IMAGE)."
+          # Continue waiting and skip below logic
           sleep 1m
           continue
         fi
