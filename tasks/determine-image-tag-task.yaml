@@ -127,7 +127,9 @@ spec:
           return
         fi
 
-        if [[ "${PIPELINE_EVENT_TYPE}" =~ ^(re)?test-(all-)?comment$ ]]; then
+        # `(re)test-(all-)comment` event is triggered via standard `/test [...]`, `/retest [...]` comments.
+        # `on-comment` event is triggered on comments that match `pipelinesascode.tekton.dev/on-comment` annotation if the one is configured.
+        if [[ "${PIPELINE_EVENT_TYPE}" =~ ^((re)?test-(all-)?comment|on-comment)$ ]]; then
           log "This seems to be a retest of a pipeline run, checking if this is for a tagged build."
           if [[ "${#tags_from_git_arr[*]}" -gt 0 ]]; then
             log "This seems to be a re-run of a tagged build, using the first tag detected: '${tags_from_git_arr[0]}'."
