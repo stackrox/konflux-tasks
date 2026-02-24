@@ -3,7 +3,10 @@ kind: Task
 metadata:
   name: wait-for-image
 spec:
-  description: Waits until the specified image is found and returns its digest.
+  description: |
+    Waits until the specified image is found and returns its digest.
+    Additionally, checks whether the image was built for the same commit as triggered the running pipeline (if the image is from the same repo).
+    Also checks that the build pipeline of the image fully succeeded.
   params:
   - name: IMAGE
     description: Image reference.
@@ -55,21 +58,23 @@ spec:
         fi
 
         digest="${infos[0]}"
-        git_ref="${infos[1]}"
-        source_repository="${infos[2]}"
+        git_ref_from_label="${infos[1]}"
+        repository_from_label="${infos[2]}"
+        IMAGE_WITH_DIGEST="$(params.IMAGE)@${digest}"
 
-        if [[ "${source_repository}" == "${REPOSITORY_URL}" ]]; then
+
+        if [[ "${repository_from_label}" == "${REPOSITORY_URL}" ]]; then
           >&2 echo "INFO: Checking the Git reference is required because this image is built from the same repository as the current pipeline."
-          if [[ "${git_ref}" == "${DESIRED_GIT_REF}" ]]; then
-            >&2 echo "INFO: The found image $(params.IMAGE)@${digest} is built for the expected commit (${DESIRED_GIT_REF}). Accepting this image."
+          if [[ "${git_ref_from_label}" == "${DESIRED_GIT_REF}" ]]; then
+            >&2 echo "INFO: The found image ${IMAGE_WITH_DIGEST} is built for the expected commit (${DESIRED_GIT_REF})."
             break
           else
-            >&2 echo "WARNING: The found image $(params.IMAGE)@${digest} seems to be built for a different commit (${git_ref}) than the one expected (${DESIRED_GIT_REF}). This could happen for a tagged build when a git tag was moved and newly-triggered pipelines haven't finished yet. This task will keep waiting for the image with the matching tag to appear."
+            >&2 echo "WARNING: The found image ${IMAGE_WITH_DIGEST} seems to be built for a different commit (${git_ref_from_label}) than the one expected (${DESIRED_GIT_REF}). This could happen for a tagged build when a git tag was moved and newly-triggered pipelines haven't finished yet. This task will keep waiting for the image with the matching git sha to appear."
             # Continue waiting
             sleep 1m
           fi
         else
-          >&2 echo "INFO: Checking the Git reference is not required because this image is built from a different repository than the current pipeline. Accepting this image."
+          >&2 echo "INFO: Skipping the Git reference check for this image since it is built from a different repository than the current pipeline."
           break
         fi
       done
@@ -79,12 +84,11 @@ spec:
       # Output
       echo -n "${digest}" | tee "$(results.IMAGE_DIGEST.path)"
       echo
-      echo -n "${git_ref}" | tee "$(results.GIT_REF.path)"
+      echo -n "${git_ref_from_label}" | tee "$(results.GIT_REF.path)"
       echo
-      echo -n "${source_repository}" | tee "$(results.GIT_REPO.path)"
+      echo -n "${repository_from_label}" | tee "$(results.GIT_REPO.path)"
       echo
 
-      IMAGE_WITH_DIGEST="$(params.IMAGE)@${digest}"
       echo "Waiting for attestation for ${IMAGE_WITH_DIGEST} to appear..."
       while true; do
         if cosign tree "${IMAGE_WITH_DIGEST}" | grep -qE "quay.io/.*:sha256-.*\.att$"; then
