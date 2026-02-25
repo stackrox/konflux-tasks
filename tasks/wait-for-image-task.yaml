@@ -37,8 +37,6 @@ spec:
 
       set -euo pipefail
 
-      DESIRED_GIT_REF="this-is-an-override-for-testing"
-
       echo "Waiting for image $(params.IMAGE) to become available..."
       while true; do
         if ! raw_info="$(skopeo inspect \
