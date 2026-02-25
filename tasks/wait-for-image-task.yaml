@@ -62,7 +62,6 @@ spec:
         repository_from_label="${infos[2]}"
         IMAGE_WITH_DIGEST="$(params.IMAGE)@${digest}"
 
-
         if [[ "${repository_from_label}" == "${REPOSITORY_URL}" ]]; then
           >&2 echo "INFO: Checking the Git reference is required because this image is built from the same repository as the current pipeline."
           if [[ "${git_ref_from_label}" == "${DESIRED_GIT_REF}" ]]; then
