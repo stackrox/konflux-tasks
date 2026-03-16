@@ -3,7 +3,7 @@ kind: Task
 metadata:
   name: fetch-scanner-v2-data
   labels:
-    app.kubernetes.io/version: 0.1
+    app.kubernetes.io/version: "0.1"
 
 spec:
 

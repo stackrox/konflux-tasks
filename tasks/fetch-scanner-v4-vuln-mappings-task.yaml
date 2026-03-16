@@ -3,7 +3,7 @@ kind: Task
 metadata:
   name: fetch-scanner-v4-vuln-mappings
   labels:
-    app.kubernetes.io/version: 0.1
+    app.kubernetes.io/version: "0.1"
 spec:
   description: Fetches vulnerability mappings for Scanner v4 from StackRox artifacts to be baked into the image.
   params:

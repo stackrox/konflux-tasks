@@ -3,7 +3,7 @@ kind: Task
 metadata:
   name: post-bigquery-metrics
   labels:
-    app.kubernetes.io/version: 0.1
+    app.kubernetes.io/version: "0.1"
 spec:
   description: |
     Adds a record to ACS BigQuery table about the pipeline's execution status.

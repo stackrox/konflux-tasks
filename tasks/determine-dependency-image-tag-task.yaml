@@ -3,7 +3,7 @@ kind: Task
 metadata:
   name: determine-dependency-image-tag
   labels:
-    app.kubernetes.io/version: 0.1
+    app.kubernetes.io/version: "0.1"
 spec:
   description: Determines the original tags of Scanner V2 or Collector images using 'make scanner-tag' or
     'make collector-tag' output.

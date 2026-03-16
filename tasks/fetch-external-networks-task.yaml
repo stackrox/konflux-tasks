@@ -3,7 +3,7 @@ kind: Task
 metadata:
   name: fetch-external-networks
   labels:
-    app.kubernetes.io/version: 0.1
+    app.kubernetes.io/version: "0.1"
 spec:
   description: Fetches external network definitions from StackRox artifacts to be baked into the image.
   params:

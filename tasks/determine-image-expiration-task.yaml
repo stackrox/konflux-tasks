@@ -3,7 +3,7 @@ kind: Task
 metadata:
   name: determine-image-expiration
   labels:
-    app.kubernetes.io/version: 0.1
+    app.kubernetes.io/version: "0.1"
 spec:
   description: Determines the image expiration parameter, or sets to empty for git-tagged builds.
   params:

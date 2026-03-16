@@ -3,7 +3,7 @@ kind: Task
 metadata:
   name: wait-for-image
   labels:
-    app.kubernetes.io/version: 0.1
+    app.kubernetes.io/version: "0.1"
 spec:
   description: |
     Waits until the specified image is found and returns its digest.
