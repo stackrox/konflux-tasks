@@ -2,6 +2,8 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: determine-image-tag
+  labels:
+    app.kubernetes.io/version: 0.1
 spec:
   description: Determines the tag for the output image using the StackRox conventions.
     For development builds the tag comes from the output of 'make tag' command.

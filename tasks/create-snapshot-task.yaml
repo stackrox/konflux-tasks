@@ -4,6 +4,8 @@ apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: create-snapshot
+  labels:
+    app.kubernetes.io/version: 0.1
 spec:
   description: Creates a snapshot based on the component names, image refs and Git information passed to the task.
   params:
