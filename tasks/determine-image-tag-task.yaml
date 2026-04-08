@@ -41,7 +41,7 @@ spec:
     - use
     - $(params.SOURCE_ARTIFACT)=/var/workdir/source
   - name: determine-image-tag
-    image: registry.access.redhat.com/ubi9:latest@sha256:9e6e193bfc3596a84d2a32f42d6b1552398ec9735b9a4e893a0fc3c6fbccb381
+    image: registry.access.redhat.com/ubi9:latest@sha256:039095faabf1edde946ff528b3b6906efa046ee129f3e33fd933280bb6936221
     workingDir: /var/workdir/source
     env:
     - name: PIPELINE_EVENT_TYPE
