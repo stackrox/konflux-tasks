@@ -115,7 +115,7 @@ spec:
           sleep "${delay}"
         fi
 
-        if bq --nosync query \
+        if bq --sync query \
             --batch \
             --headless \
             --use_legacy_sql=false \
