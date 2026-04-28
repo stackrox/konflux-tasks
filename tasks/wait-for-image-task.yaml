@@ -24,7 +24,7 @@ spec:
     description: Git repository URL for the image's source code from `source-location` image label.
   steps:
   - name: wait-for-image
-    image: quay.io/konflux-ci/release-service-utils:latest@sha256:1e9f006298e8ccc6894dfd4ead86ff8bb1178c2f879270b74253e15ba552bd28
+    image: quay.io/konflux-ci/release-service-utils:latest@sha256:52b4ab39bcbce444712afd0c2700dcda36be6c4a36e0c8a8db87a45e615326a7
     env:
     - name: DESIRED_GIT_REF
       valueFrom:
