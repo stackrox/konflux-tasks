@@ -95,7 +95,7 @@ spec:
       gcloud config set project "${GCP_PROJECT}"
 
       # Konflux/PaC tends to report PR number on PR merge commits which is then misleading in our data because push
-      # jobs wrongly appear belonging to PRs. Zero out PR number in this case.
+      # jobs wrongly appear belonging to PRs. Zero out PR number to prevent this.
       if [[ "${SOURCE_BRANCH}" == "${TARGET_BRANCH}" ]]; then
         PULL_REQUEST_NUMBER=""
       fi
