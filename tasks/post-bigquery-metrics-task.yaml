@@ -68,6 +68,11 @@ spec:
       valueFrom:
         fieldRef:
           fieldPath: metadata.annotations['pipelinesascode.tekton.dev/source-branch']
+    - name: TARGET_BRANCH
+      # E.g. "master"
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.annotations['pipelinesascode.tekton.dev/branch']
     - name: PULL_REQUEST_NUMBER
       # E.g. "14577"
       valueFrom:
@@ -88,6 +93,12 @@ spec:
 
       gcloud auth activate-service-account --key-file /mnt/gcp-service-account/konflux-metrics-gcp-service-account
       gcloud config set project "${GCP_PROJECT}"
+
+      # Konflux/PaC tends to report PR number on PR merge commits which is then misleading in our data because push
+      # jobs wrongly appear belonging to PRs. Zero out PR number to prevent this.
+      if [[ "${SOURCE_BRANCH}" == "${TARGET_BRANCH}" ]]; then
+        PULL_REQUEST_NUMBER=""
+      fi
 
       AGGREGATE_TASKS_STATUS="$(params.AGGREGATE_TASKS_STATUS)"
 
