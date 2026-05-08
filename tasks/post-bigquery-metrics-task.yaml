@@ -38,7 +38,7 @@ spec:
   - name: update-bigquery
     # GCP CLIs aren't available in Quay or in the Red Hat Registry. If the availability of Google's registry becomes a
     # problem for our pipelines stability, we can set up image mirroring.
-    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:stable@sha256:139e7d5f6f5d54d0f3234c1c74fd0e4aca026abd58bc8f08a26867ace945c529
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:stable@sha256:683f5ab336158521e1f3c275b9da83d17c30fbf53ce2cc3adf598f0640657f8b
     volumeMounts:
     - name: gcp-service-account
       mountPath: /mnt/gcp-service-account
@@ -68,6 +68,11 @@ spec:
       valueFrom:
         fieldRef:
           fieldPath: metadata.annotations['pipelinesascode.tekton.dev/source-branch']
+    - name: TARGET_BRANCH
+      # E.g. "master"
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.annotations['pipelinesascode.tekton.dev/branch']
     - name: PULL_REQUEST_NUMBER
       # E.g. "14577"
       valueFrom:
@@ -88,6 +93,12 @@ spec:
 
       gcloud auth activate-service-account --key-file /mnt/gcp-service-account/konflux-metrics-gcp-service-account
       gcloud config set project "${GCP_PROJECT}"
+
+      # Konflux/PaC tends to report PR number on PR merge commits which is then misleading in our data because push
+      # jobs wrongly appear belonging to PRs. Zero out PR number to prevent this.
+      if [[ "${SOURCE_BRANCH}" == "${TARGET_BRANCH}" ]]; then
+        PULL_REQUEST_NUMBER=""
+      fi
 
       AGGREGATE_TASKS_STATUS="$(params.AGGREGATE_TASKS_STATUS)"
 

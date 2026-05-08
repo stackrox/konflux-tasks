@@ -43,7 +43,7 @@ spec:
   steps:
 
   - name: render-snapshot
-    image: quay.io/konflux-ci/release-service-utils:latest@sha256:3c74e8a4872cc6a291b712a35bfd30786bcf014471a6d655e8a1c3dd417de43a
+    image: quay.io/konflux-ci/release-service-utils:latest@sha256:2545614fc7da7f797161761cb98b80547e784bc2b7d60b1d17cf53c9ce1db16d
     env:
     - name: COMPONENT_MAPPINGS
       value: $(params.COMPONENT_MAPPINGS)
@@ -398,5 +398,5 @@ spec:
           main()
 
   - name: create-snapshot
-    image: registry.redhat.io/openshift4/ose-cli-rhel9@sha256:62e139edbd35d4a5213ac63679f68b1d05a47adf45bc75769f14124d3c5b10c8
+    image: registry.redhat.io/openshift4/ose-cli-rhel9@sha256:1b960c8a1a29c21dc858eccc9ca01e198e2e187079a2bd26984f462035cc2f25
     script: oc create -f snapshot.json
