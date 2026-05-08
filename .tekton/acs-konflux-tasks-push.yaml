@@ -508,6 +508,9 @@ spec:
         steps:
         - name: update-tasks-trust
           image: quay.io/conforma/cli:latest@sha256:576df237c75266b45e277c0899eeb58f8338cf5efacba358de2ed9b962160f42
+          env:
+            - name: HOME
+              value: /tekton/home
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
