@@ -497,7 +497,7 @@ spec:
           description: Image digest of the trust bundle artifact
         steps:
         - name: update-tasks-trust
-          image: quay.io/konflux-ci/task-runner:1.6.0@sha256:1abfe4e50d4e961d0fd9790202565f93ee650fe8dfc50932c94989acba10485f
+          image: quay.io/conforma/cli:latest@sha256:576df237c75266b45e277c0899eeb58f8338cf5efacba358de2ed9b962160f42
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
@@ -545,6 +545,16 @@ spec:
                 --bundle "$(params.BUNDLE_REF)" \
                 --output "oci:${trust_image_ref}"
             fi
+
+        - name: get-trust-bundle-image-digest
+          image: quay.io/konflux-ci/task-runner:1.6.0@sha256:1abfe4e50d4e961d0fd9790202565f93ee650fe8dfc50932c94989acba10485f
+          script: |
+            #!/usr/bin/env bash
+            set -euo pipefail
+
+            trust_image_tag="$(params.TRUST_IMAGE_TAG)"
+            trust_image_repo="$(params.TRUST_IMAGE_REPO)"
+            trust_image_ref="${trust_image_repo}:${trust_image_tag}"
 
             # Because this image is a custom type we can't use skopeo inspect, oras manifest or podman manifest inspect easily,
             # as they don't include the manifest of the artifact, only of the content layers.
