@@ -469,7 +469,7 @@ spec:
         - name: BUNDLE_CONTENTS
         steps:
         - name: get-bundle-info
-          image: quay.io/konflux-ci/appstudio-utils:latest@sha256:311552b4c9897976c4ffa112ee1444fa1bba0721e613906e64a7a08c56cb4854
+          image: quay.io/konflux-ci/task-runner:1.6.0@sha256:1abfe4e50d4e961d0fd9790202565f93ee650fe8dfc50932c94989acba10485f
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
@@ -507,7 +507,11 @@ spec:
           description: Image digest of the trust bundle artifact
         steps:
         - name: update-tasks-trust
-          image: quay.io/konflux-ci/appstudio-utils:latest@sha256:311552b4c9897976c4ffa112ee1444fa1bba0721e613906e64a7a08c56cb4854
+          image: quay.io/conforma/cli:snapshot@sha256:5c65cd5de356e0954f3adad019974b27c11ff9cbd309b463f66d92d511c62c41
+          env:
+          # This is required to copy the docker creds to a writeable location.
+          - name: HOME
+            value: /tekton/home
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
@@ -555,6 +559,18 @@ spec:
                 --bundle "$(params.BUNDLE_REF)" \
                 --output "oci:${trust_image_ref}"
             fi
+
+            echo ">>> Done"
+
+        - name: get-trust-bundle-digest
+          image: quay.io/konflux-ci/task-runner:1.5.0@sha256:200019314a50be5b6dd06f362c794c92a700583a522c5eee9a41e3eab7f706c5
+          script: |
+            #!/usr/bin/env bash
+            set -euo pipefail
+
+            trust_image_tag="$(params.TRUST_IMAGE_TAG)"
+            trust_image_repo="$(params.TRUST_IMAGE_REPO)"
+            trust_image_ref="${trust_image_repo}:${trust_image_tag}"
 
             # Because this image is a custom type we can't use skopeo inspect, oras manifest or podman manifest inspect easily,
             # as they don't include the manifest of the artifact, only of the content layers.
