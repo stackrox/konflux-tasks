@@ -366,7 +366,7 @@ spec:
           description: Floating tag to apply to the resulting images.
         steps:
         - name: get-floating-tag
-          image: registry.redhat.io/ubi9-minimal:latest@sha256:12db9874bd753eb98b1ab3d840e75de5d6842ac0604fbd68c012adefe97140be
+          image: registry.redhat.io/ubi9-minimal:latest@sha256:24650313873554b6ba16c1a1b6b9f9142604f6ab735113e1695faf2dd07fdede
           env:
           - name: SOURCE_BRANCH
             valueFrom:
@@ -408,7 +408,7 @@ spec:
           description: Unique tag to apply to the resulting images.
         steps:
         - name: generate-unique-tag
-          image: registry.redhat.io/ubi9-minimal:latest@sha256:12db9874bd753eb98b1ab3d840e75de5d6842ac0604fbd68c012adefe97140be
+          image: registry.redhat.io/ubi9-minimal:latest@sha256:24650313873554b6ba16c1a1b6b9f9142604f6ab735113e1695faf2dd07fdede
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
@@ -507,7 +507,7 @@ spec:
           description: Image digest of the trust bundle artifact
         steps:
         - name: update-tasks-trust
-          image: quay.io/conforma/cli:snapshot@sha256:a5e9980e69fdb61d9e1b10986a629392c930ce0431b3047221002cd195fcdc07
+          image: quay.io/conforma/cli:snapshot@sha256:58135ff0774d0ec43b7f06cc617a94a4b3a69ef2d042182fd5445a2a26607aa6
           env:
           # This is required to copy the docker creds to a writeable location.
           - name: HOME
