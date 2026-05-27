@@ -61,7 +61,7 @@ spec:
 
   - name: fetch-scanner-data
     # We need git and toolbox image has it.
-    image: registry.access.redhat.com/ubi9/toolbox:latest@sha256:be559b2c4c4bdc62593c682f5a1b1b12d4f93d11487183904cb820be337d4bf5
+    image: registry.access.redhat.com/ubi9/toolbox:latest@sha256:6076c08b511674873ef7be0ee2da2750a93cb6e5901c485a7df9c65159fbd467
     workingDir: /var/workdir/source
     # Blobs for tagged builds are built on GHA in https://github.com/stackrox/scanner.
     # If the task times out, look there to debug.
