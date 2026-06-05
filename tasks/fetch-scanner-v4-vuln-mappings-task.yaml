@@ -35,6 +35,7 @@ spec:
   steps:
   - name: use-trusted-artifact
     image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+    imagePullPolicy: IfNotPresent
     computeResources:
       requests:
         memory: 2Gi
@@ -45,10 +46,12 @@ spec:
     - $(params.SOURCE_ARTIFACT)=/var/workdir/source
   - name: fetch-vuln-mappings
     image: registry.access.redhat.com/ubi9-minimal:latest@sha256:ae09ecc3d754bc1726cbda3e2599cc7839e09fe1cc547ce173cf669b645be3cc
+    imagePullPolicy: IfNotPresent
     workingDir: /var/workdir/source
     script: scanner/image/scanner/download-mappings.sh "$(params.TARGET_DIR)"
   - name: create-trusted-artifact
     image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+    imagePullPolicy: IfNotPresent
     computeResources:
       requests:
         memory: 2Gi

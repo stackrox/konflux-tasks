@@ -50,6 +50,7 @@ spec:
 
   - name: use-trusted-artifact
     image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+    imagePullPolicy: IfNotPresent
     computeResources:
       requests:
         memory: 2Gi
@@ -62,6 +63,7 @@ spec:
   - name: fetch-scanner-data
     # We need git and toolbox image has it.
     image: registry.access.redhat.com/ubi9/toolbox:latest@sha256:10444fd9c06fdbee0a05b41a50587240f33b6fc2bd690fe1261ba9dcee5492f1
+    imagePullPolicy: IfNotPresent
     workingDir: /var/workdir/source
     # Blobs for tagged builds are built on GHA in https://github.com/stackrox/scanner.
     # If the task times out, look there to debug.
@@ -127,6 +129,7 @@ spec:
 
   - name: create-trusted-artifact
     image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+    imagePullPolicy: IfNotPresent
     computeResources:
       requests:
         memory: 2Gi
