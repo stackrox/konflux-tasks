@@ -367,6 +367,7 @@ spec:
         steps:
         - name: get-floating-tag
           image: registry.redhat.io/ubi9-minimal:latest@sha256:ae09ecc3d754bc1726cbda3e2599cc7839e09fe1cc547ce173cf669b645be3cc
+          imagePullPolicy: IfNotPresent
           env:
           - name: SOURCE_BRANCH
             valueFrom:
@@ -409,6 +410,7 @@ spec:
         steps:
         - name: generate-unique-tag
           image: registry.redhat.io/ubi9-minimal:latest@sha256:ae09ecc3d754bc1726cbda3e2599cc7839e09fe1cc547ce173cf669b645be3cc
+          imagePullPolicy: IfNotPresent
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
@@ -470,6 +472,7 @@ spec:
         steps:
         - name: get-bundle-info
           image: quay.io/konflux-ci/task-runner:1.7.0@sha256:1c0582a85dae0949f3ec94aca95695c5d7698b371f1b76c5a78822a6249073dc
+          imagePullPolicy: IfNotPresent
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
@@ -508,6 +511,7 @@ spec:
         steps:
         - name: update-tasks-trust
           image: quay.io/conforma/cli:snapshot@sha256:20b8e63446b5fbcfced2767cf09f673d0164e913e8027ad39eb57795db713016
+          imagePullPolicy: IfNotPresent
           env:
           # This is required to copy the docker creds to a writeable location.
           - name: HOME
@@ -564,6 +568,7 @@ spec:
 
         - name: get-trust-bundle-digest
           image: quay.io/konflux-ci/task-runner:1.7.0@sha256:1c0582a85dae0949f3ec94aca95695c5d7698b371f1b76c5a78822a6249073dc
+          imagePullPolicy: IfNotPresent
           script: |
             #!/usr/bin/env bash
             set -euo pipefail
