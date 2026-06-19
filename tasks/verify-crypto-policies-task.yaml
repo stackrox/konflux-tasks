@@ -1,0 +1,42 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: verify-crypto-policies
+  labels:
+    app.kubernetes.io/version: "0.1"
+spec:
+  description: >-
+    Verify that OpenSSL in the built image is configured to support post-quantum
+    cryptography (more specifically, the ML-KEM algorithm group). Regressions can
+    occur e.g. if the crypto-policy setting is removed from the Dockerfile, or the
+    base image is changed to one that does not support post-quantum cryptography.
+  params:
+  - name: IMAGE_URL
+    description: The URL of the built image to verify.
+    type: string
+  - name: IMAGE_DIGEST
+    description: The digest of the built image to verify.
+    type: string
+  steps:
+  - name: check-pq-crypto-policy
+    image: $(params.IMAGE_URL)@$(params.IMAGE_DIGEST)
+    imagePullPolicy: IfNotPresent
+    env:
+    - name: EXPECTED_GROUP
+      value: X25519MLKEM768
+    - name: CONFIG_FILE
+      value: /etc/crypto-policies/back-ends/opensslcnf.config
+    script: |
+      #!/bin/bash
+      set -euo pipefail
+      echo "Verifying post-quantum crypto policy configuration..."
+      if grep -q "${EXPECTED_GROUP}" "${CONFIG_FILE}"; then
+        echo "PASS: ${EXPECTED_GROUP} found in ${CONFIG_FILE}"
+      else
+        echo "Contents of ${CONFIG_FILE}:"
+        cat "${CONFIG_FILE}"
+        echo
+        echo "FAIL: The image's OpenSSL is not configured to support ML-KEM."
+        echo "FAIL: ${EXPECTED_GROUP} not found in ${CONFIG_FILE}"
+        exit 1
+      fi
