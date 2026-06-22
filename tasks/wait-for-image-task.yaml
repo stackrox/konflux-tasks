@@ -16,12 +16,6 @@ spec:
   results:
   - name: IMAGE_DIGEST
     description: Image digest in the format `sha256:abcdef0123`.
-  # TODO(ROX-31696): drop `GIT_REF` and `GIT_REPO` results after `create-snapshot-from-bundle` is rolled out to all
-  # release branches and there are no more active PRs that depend on `create-snapshot`.
-  - name: GIT_REF
-    description: Git commit for the image's source code from `vcs-ref` image label.
-  - name: GIT_REPO
-    description: Git repository URL for the image's source code from `source-location` image label.
   steps:
   - name: wait-for-image
     image: quay.io/konflux-ci/release-service-utils:latest@sha256:4883a99413e3424a5f5eec8dbca63c2e40e58ab02d809f373d23fcd9c49b58a8
