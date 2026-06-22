@@ -19,7 +19,7 @@ spec:
     type: string
   steps:
   - name: check-pq-crypto-policy
-    image: registry.access.redhat.com/ubi9/podman:latest@sha256:82d9547a4a606ff5f7613d81fcbee3f328a05ac94e059cea1afbb29960c5d8b8
+    image: registry.redhat.io/openshift4/ose-cli-rhel9:v4.22@sha256:98b5f93d5ab68a886c325add352d6675a1fd037db44763c270026e9bd66c28f0
     imagePullPolicy: IfNotPresent
     env:
     - name: IMAGE
@@ -34,13 +34,14 @@ spec:
 
       echo "Verifying post-quantum crypto policy configuration..."
 
-      copied_config="$(mktemp)"
+      local_dir="$(mktemp -d)"
+      copied_config="${local_dir}/$(basename "${CONFIG_FILE}")"
+      oc image extract "${IMAGE}" --path "${CONFIG_FILE}:${local_dir}"
 
-      podman pull "${IMAGE}"
-      container_id="$(podman create "${IMAGE}")"
-      podman cp "${container_id}:${CONFIG_FILE}" "${copied_config}"
-      podman rm "${container_id}"
-
+      if [[ ! -f "${copied_config}" ]]; then
+        echo "FAIL: ${CONFIG_FILE} not found in image"
+        exit 1
+      fi
       if grep -qF "${EXPECTED_GROUP}" "${copied_config}"; then
         echo "PASS: ${EXPECTED_GROUP} found in ${CONFIG_FILE}"
       else
