@@ -19,7 +19,7 @@ spec:
     type: string
   steps:
   - name: check-pq-crypto-policy
-    image: registry.redhat.io/openshift4/ose-cli-rhel9:v4.22@sha256:98b5f93d5ab68a886c325add352d6675a1fd037db44763c270026e9bd66c28f0
+    image: registry.redhat.io/openshift4/ose-cli-rhel9:v4.22@sha256:74c3ddcb7ec246143eaa29207bbb99be8cf83bec12bf8998a9f594cca0e33a78
     imagePullPolicy: IfNotPresent
     env:
     - name: IMAGE

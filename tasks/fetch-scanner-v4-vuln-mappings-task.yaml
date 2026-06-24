@@ -45,7 +45,7 @@ spec:
     - use
     - $(params.SOURCE_ARTIFACT)=/var/workdir/source
   - name: fetch-vuln-mappings
-    image: registry.access.redhat.com/ubi9-minimal:latest@sha256:1bc3c5c15720506a0cf48adfdf8b623dfe704377e007d7bbae8d14876392ca6a
+    image: registry.access.redhat.com/ubi9-minimal:latest@sha256:850143255ee0d1915f09aaa09f6ed31f24086ba605c323badfbefa95b8c52b0e
     imagePullPolicy: IfNotPresent
     workingDir: /var/workdir/source
     script: scanner/image/scanner/download-mappings.sh "$(params.TARGET_DIR)"
