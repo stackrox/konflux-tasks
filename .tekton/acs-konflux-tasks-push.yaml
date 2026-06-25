@@ -366,7 +366,7 @@ spec:
           description: Floating tag to apply to the resulting images.
         steps:
         - name: get-floating-tag
-          image: registry.redhat.io/ubi9-minimal:latest@sha256:850143255ee0d1915f09aaa09f6ed31f24086ba605c323badfbefa95b8c52b0e
+          image: registry.redhat.io/ubi9-minimal:latest@sha256:44bc70ef6e6ea9a70e353be97f4722e10358d09fbb9494ca943b2a641049690e
           imagePullPolicy: IfNotPresent
           env:
           - name: SOURCE_BRANCH
@@ -409,7 +409,7 @@ spec:
           description: Unique tag to apply to the resulting images.
         steps:
         - name: generate-unique-tag
-          image: registry.redhat.io/ubi9-minimal:latest@sha256:850143255ee0d1915f09aaa09f6ed31f24086ba605c323badfbefa95b8c52b0e
+          image: registry.redhat.io/ubi9-minimal:latest@sha256:44bc70ef6e6ea9a70e353be97f4722e10358d09fbb9494ca943b2a641049690e
           imagePullPolicy: IfNotPresent
           script: |
             #!/usr/bin/env bash
