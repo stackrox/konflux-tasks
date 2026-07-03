@@ -32,6 +32,8 @@
       ".tekton/**",
       "tasks/**",
     ],
+    "recreateWhen": "always",
+    "rebaseWhen": "behind-base-branch",
     "schedule": [
       // For some reason, Konflux config defines custom schedule on each type of dependency manager and that takes
       // precedence over the global/default schedule. We want our own schedule and hence need to make this override.
