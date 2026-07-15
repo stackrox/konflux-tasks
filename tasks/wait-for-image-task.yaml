@@ -80,10 +80,6 @@ spec:
       # Output
       echo -n "${digest}" | tee "$(results.IMAGE_DIGEST.path)"
       echo
-      echo -n "${git_ref_from_label}" | tee "$(results.GIT_REF.path)"
-      echo
-      echo -n "${repository_from_label}" | tee "$(results.GIT_REPO.path)"
-      echo
 
       echo "Waiting for attestation for ${IMAGE_WITH_DIGEST} to appear..."
       while true; do
