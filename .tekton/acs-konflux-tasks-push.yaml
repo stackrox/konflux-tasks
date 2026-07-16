@@ -510,7 +510,7 @@ spec:
           description: Image digest of the trust bundle artifact
         steps:
         - name: update-tasks-trust
-          image: quay.io/conforma/cli:snapshot@sha256:ac7be519786dc2aef02d332982ffb4b4287fbeb0385c553ca101be1462729c83
+          image: quay.io/conforma/cli:snapshot@sha256:4765d6dc9948b9468b0e38759c4b698cecbf873df0f9bea9ddff6c628ce71c03
           imagePullPolicy: IfNotPresent
           env:
           # This is required to copy the docker creds to a writeable location.
