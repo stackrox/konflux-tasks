@@ -366,7 +366,7 @@ spec:
           description: Floating tag to apply to the resulting images.
         steps:
         - name: get-floating-tag
-          image: registry.redhat.io/ubi9-minimal:latest@sha256:062c52ff973065752b0965787649db2bcf551a6c727a00e95a3eb42cebadbdab
+          image: registry.redhat.io/ubi9-minimal:latest@sha256:6c79f4fb38a20d496c859025d57e4074835e849d5d14819c4e021ad78446bce8
           imagePullPolicy: IfNotPresent
           env:
           - name: SOURCE_BRANCH
@@ -409,7 +409,7 @@ spec:
           description: Unique tag to apply to the resulting images.
         steps:
         - name: generate-unique-tag
-          image: registry.redhat.io/ubi9-minimal:latest@sha256:062c52ff973065752b0965787649db2bcf551a6c727a00e95a3eb42cebadbdab
+          image: registry.redhat.io/ubi9-minimal:latest@sha256:6c79f4fb38a20d496c859025d57e4074835e849d5d14819c4e021ad78446bce8
           imagePullPolicy: IfNotPresent
           script: |
             #!/usr/bin/env bash
@@ -510,7 +510,7 @@ spec:
           description: Image digest of the trust bundle artifact
         steps:
         - name: update-tasks-trust
-          image: quay.io/conforma/cli:snapshot@sha256:a8c4e9b52ebf0998f5acac3cc8a5ef2d9d9c5bf877a037ba26fa40712a42a5ae
+          image: quay.io/conforma/cli:snapshot@sha256:5743a7cb3a756f57fe2345b4cad9ce0670eec5f042fec227ed4f854acc4f2431
           imagePullPolicy: IfNotPresent
           env:
           # This is required to copy the docker creds to a writeable location.
