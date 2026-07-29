@@ -113,22 +113,28 @@ spec:
           | length
         ' "${att_file}")"
       elif [[ "${predicate_type}" == "${v1_predicate_type}" ]]; then
-        not_success_count="$(jq '
-          [
-            .predicate.buildDefinition.resolvedDependencies[]
-            | select(has("content"))
-            | .content
-            | @base64d
-            | fromjson
-            | select(
-                (.status.conditions[] | select(.type == "Succeeded") | .status) != "True"
-              )
-          ]
-          | length
-        ' "${att_file}")"
-      else
-          >&2 echo "ERROR: Unknown predicate type: ${predicate_type}"
+        build_type="$(jq -r '.predicate.buildDefinition.buildType' "${att_file}")"
+        if [[ "${build_type}" == "https://tekton.dev/chains/v2/slsa-tekton" ]]; then
+          not_success_count="$(jq '
+            [
+              .predicate.buildDefinition.resolvedDependencies[]
+              | select(has("content"))
+              | .content
+              | @base64d
+              | fromjson
+              | select(
+                  ([.status.conditions[]? | select(.type == "Succeeded" and .status == "True")] | length) == 0
+                )
+            ]
+            | length
+          ' "${att_file}")"
+        else
+          >&2 echo "ERROR: Unknown build type: ${build_type}"
           exit 1
+        fi
+      else
+        >&2 echo "ERROR: Unknown predicate type: ${predicate_type}"
+        exit 1
       fi
 
       if [[ "${not_success_count}" -gt 0 ]]; then
