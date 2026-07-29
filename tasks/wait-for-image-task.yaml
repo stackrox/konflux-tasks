@@ -90,7 +90,7 @@ spec:
         sleep 1m
       done
 
-      echo "Attestion for ${IMAGE_WITH_DIGEST} found, which means PipelineRun finished. Checking if any tasks finished unsuccessfully."
+      echo "Attestation for ${IMAGE_WITH_DIGEST} found, which means PipelineRun finished. Checking if any tasks finished unsuccessfully."
 
       att_file="$(mktemp)"
       v02_predicate_type="https://slsa.dev/provenance/v0.2"
