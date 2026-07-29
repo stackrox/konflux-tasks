@@ -92,13 +92,46 @@ spec:
 
       echo "Attestion for ${IMAGE_WITH_DIGEST} found, which means PipelineRun finished. Checking if any tasks finished unsuccessfully."
 
-      no_success="$(cosign download attestation "${IMAGE_WITH_DIGEST}" | \
-        jq -r '.payload' | \
-        base64 -d | \
-        jq '.predicate.buildConfig.tasks | [ .[] | select(.status != "Succeeded") ] | length'
-      )"
+      att_file="$(mktemp)"
+      v02_predicate_type="https://slsa.dev/provenance/v0.2"
+      v1_predicate_type="https://slsa.dev/provenance/v1"
 
-      if [[ "${no_success}" -gt 0 ]]; then
+      cosign download attestation "${IMAGE_WITH_DIGEST}" | \
+        jq -r '.payload' | \
+        base64 -d > "${att_file}"
+
+      predicate_type="$(jq -r '.predicateType' "${att_file}")"
+      echo "Predicate type of the attestation: ${predicate_type}"
+      not_success_count=0
+
+      if [[ "${predicate_type}" == "${v02_predicate_type}" ]]; then
+        not_success_count="$(jq '
+          [
+            .predicate.buildConfig.tasks[]
+            | select(.status != "Succeeded")
+          ]
+          | length
+        ' "${att_file}")"
+      elif [[ "${predicate_type}" == "${v1_predicate_type}" ]]; then
+        not_success_count="$(jq '
+          [
+            .predicate.buildDefinition.resolvedDependencies[]
+            | select(has("content"))
+            | .content
+            | @base64d
+            | fromjson
+            | select(
+                (.status.conditions[] | select(.type == "Succeeded") | .status) != "True"
+              )
+          ]
+          | length
+        ' "${att_file}")"
+      else
+          >&2 echo "ERROR: Unknown predicate type: ${predicate_type}"
+          exit 1
+      fi
+
+      if [[ "${not_success_count}" -gt 0 ]]; then
         >&2 echo "ERROR: At least one task has failed during build of ${IMAGE_WITH_DIGEST}."
         >&2 echo "ERROR: This image will likely fail Conforma checks. Try building it again and re-run this pipeline."
         exit 1
