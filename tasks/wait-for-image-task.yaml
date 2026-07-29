@@ -102,7 +102,6 @@ spec:
 
       predicate_type="$(jq -r '.predicateType' "${att_file}")"
       echo "Predicate type of the attestation: ${predicate_type}"
-      not_success_count=0
 
       if [[ "${predicate_type}" == "${v02_predicate_type}" ]]; then
         not_success_count="$(jq '
