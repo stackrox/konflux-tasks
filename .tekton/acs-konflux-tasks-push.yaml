@@ -366,7 +366,7 @@ spec:
           description: Floating tag to apply to the resulting images.
         steps:
         - name: get-floating-tag
-          image: registry.redhat.io/ubi9-minimal:latest@sha256:2a98ec380ad75004992b8538380a5003da64442f0a69237ed236859e023c71d0
+          image: registry.redhat.io/ubi9-minimal:latest@sha256:17fd831ced9434de0a984d60b3fbe61008308261ba98bbc348d6fbdef05fa7c0
           imagePullPolicy: IfNotPresent
           env:
           - name: SOURCE_BRANCH
@@ -409,7 +409,7 @@ spec:
           description: Unique tag to apply to the resulting images.
         steps:
         - name: generate-unique-tag
-          image: registry.redhat.io/ubi9-minimal:latest@sha256:2a98ec380ad75004992b8538380a5003da64442f0a69237ed236859e023c71d0
+          image: registry.redhat.io/ubi9-minimal:latest@sha256:17fd831ced9434de0a984d60b3fbe61008308261ba98bbc348d6fbdef05fa7c0
           imagePullPolicy: IfNotPresent
           script: |
             #!/usr/bin/env bash
@@ -471,7 +471,7 @@ spec:
         - name: BUNDLE_CONTENTS
         steps:
         - name: get-bundle-info
-          image: quay.io/konflux-ci/task-runner:2.1.0@sha256:c34c933c269e2401bb042fe69e2999cf288331b6586d4f4eca9c845270d9b1f9
+          image: quay.io/konflux-ci/task-runner:3.0.0@sha256:9f4151ff21f4c14b9151582c91a5542140bbbb6dca7861cd42081006840bec05
           imagePullPolicy: IfNotPresent
           script: |
             #!/usr/bin/env bash
@@ -510,7 +510,7 @@ spec:
           description: Image digest of the trust bundle artifact
         steps:
         - name: update-tasks-trust
-          image: quay.io/conforma/cli:snapshot@sha256:e5614bfeec03614144a6308e5670a0708fe334aaf625fa716da67ca618ae8a01
+          image: quay.io/conforma/cli:snapshot@sha256:53907ccca10018854b9d56dd56ed78237bceb7f9b49ebf79d3e26370a368254f
           imagePullPolicy: IfNotPresent
           env:
           # This is required to copy the docker creds to a writeable location.
@@ -567,7 +567,7 @@ spec:
             echo ">>> Done"
 
         - name: get-trust-bundle-digest
-          image: quay.io/konflux-ci/task-runner:2.1.0@sha256:c34c933c269e2401bb042fe69e2999cf288331b6586d4f4eca9c845270d9b1f9
+          image: quay.io/konflux-ci/task-runner:3.0.0@sha256:9f4151ff21f4c14b9151582c91a5542140bbbb6dca7861cd42081006840bec05
           imagePullPolicy: IfNotPresent
           script: |
             #!/usr/bin/env bash
