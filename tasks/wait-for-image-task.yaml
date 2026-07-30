@@ -117,7 +117,7 @@ spec:
           not_succeeded_count="$(jq '
             [
               .predicate.buildDefinition.resolvedDependencies[]
-              | select(has("content"))
+              | select(.name == "pipelineTask")
               | .content
               | @base64d
               | fromjson
