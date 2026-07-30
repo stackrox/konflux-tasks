@@ -104,7 +104,7 @@ spec:
       echo "Predicate type of the attestation: ${predicate_type}"
 
       if [[ "${predicate_type}" == "${v02_predicate_type}" ]]; then
-        not_success_count="$(jq '
+        not_succeeded_count="$(jq '
           [
             .predicate.buildConfig.tasks[]
             | select(.status != "Succeeded")
@@ -114,7 +114,7 @@ spec:
       elif [[ "${predicate_type}" == "${v1_predicate_type}" ]]; then
         build_type="$(jq -r '.predicate.buildDefinition.buildType' "${att_file}")"
         if [[ "${build_type}" == "https://tekton.dev/chains/v2/slsa-tekton" ]]; then
-          not_success_count="$(jq '
+          not_succeeded_count="$(jq '
             [
               .predicate.buildDefinition.resolvedDependencies[]
               | select(has("content"))
@@ -136,7 +136,7 @@ spec:
         exit 1
       fi
 
-      if [[ "${not_success_count}" -gt 0 ]]; then
+      if [[ "${not_succeeded_count}" -gt 0 ]]; then
         >&2 echo "ERROR: At least one task has failed during build of ${IMAGE_WITH_DIGEST}."
         >&2 echo "ERROR: This image will likely fail Conforma checks. Try building it again and re-run this pipeline."
         exit 1
