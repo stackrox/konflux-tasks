@@ -1,0 +1,5 @@
+rule_data:
+  trusted_task_rules:
+    allow:
+      stackrox-konflux-tasks:
+        - pattern: "oci://quay.io/rhacs-eng/konflux-tasks"
