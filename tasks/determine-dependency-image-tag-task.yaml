@@ -45,7 +45,7 @@ spec:
     - use
     - $(params.SOURCE_ARTIFACT)=/var/workdir/source
   - name: determine-image-tag
-    image: registry.access.redhat.com/ubi9:latest@sha256:e79f79172a6779775e1733cb4f49cd5ef03a0703c68ec46c717f93b9ac4a5e71
+    image: registry.access.redhat.com/ubi9:latest@sha256:d3e61197e0f96aee94872141b429f63eadb939de95a25fe6b504843f427b7a3f
     imagePullPolicy: IfNotPresent
     workingDir: /var/workdir/source
     script: |
