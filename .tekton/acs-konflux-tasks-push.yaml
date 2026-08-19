@@ -33,8 +33,6 @@ spec:
     value: quay.io/rhacs-eng/konflux-tasks
   - name: output-image-tag
     value: rev-{{revision}}
-  - name: build-source-image
-    value: "true"
   - name: path-context
     value: tasks
 
@@ -79,17 +77,9 @@ spec:
       description: Build dependencies to be prefetched by Cachi2
       name: prefetch-input
       type: string
-    - default: "false"
-      description: Build a source image.
-      name: build-source-image
-      type: string
     - default: "1d"
       description: This sets the expiration time for intermediate OCI artifacts produced and used during builds after which they can be garbage collected.
       name: oci-artifact-expires-after
-      type: string
-    - name: enable-cache-proxy
-      default: 'false'
-      description: Enable cache proxy configuration
       type: string
     - name: enable-package-registry-proxy
       default: 'true'
@@ -145,20 +135,6 @@ spec:
         resolver: bundles
 
     tasks:
-
-    - name: init
-      params:
-      - name: enable-cache-proxy
-        value: $(params.enable-cache-proxy)
-      taskRef:
-        params:
-        - name: name
-          value: init
-        - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-init:0.4.3@sha256:2adbec168519859c60be4ac08d14c6a994ee82d9a041e04410b61622aa56e0a2
-        - name: kind
-          value: task
-        resolver: bundles
 
     - name: clone-repository
       params:
@@ -232,30 +208,6 @@ spec:
         - name: kind
           value: task
         resolver: bundles
-
-    - name: build-source-image
-      params:
-      - name: BINARY_IMAGE
-        value: $(tasks.build-container.results.IMAGE_URL)
-      - name: SOURCE_ARTIFACT
-        value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
-      - name: CACHI2_ARTIFACT
-        value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
-      - name: BINARY_IMAGE_DIGEST
-        value: $(tasks.build-container.results.IMAGE_DIGEST)
-      taskRef:
-        params:
-        - name: name
-          value: source-build-oci-ta
-        - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-source-build-oci-ta:0.3@sha256:c7ecd1e518007e31e19188333a17dd3558e222ce2e3b2a484a1e59ec069799cf
-        - name: kind
-          value: task
-        resolver: bundles
-      when:
-      - input: $(params.build-source-image)
-        operator: in
-        values: ["true"]
 
     - name: sast-snyk-check
       params:
@@ -342,9 +294,9 @@ spec:
       taskRef:
         params:
         - name: name
-          value: sast-shell-check-oci-ta
+          value: sast-unicode-check-oci-ta
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-sast-shell-check-oci-ta:0.1@sha256:beb05ae2fad733783b3b17e05871e0eaf527a07c904cf3fb2cb551025007eec1
+          value: quay.io/konflux-ci/tekton-catalog/task-sast-unicode-check-oci-ta:0.1@sha256:875f2483fcad2167c2fdb611bcc447dbec4bcef059fd5a3f6d9b85c0a7456c15
         - name: kind
           value: task
         resolver: bundles
