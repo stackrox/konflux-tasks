@@ -36,7 +36,7 @@ spec:
     description: Image reference of the output image containing both the repository, the tag and the digest.
   steps:
   - name: retag-image
-    image: quay.io/konflux-ci/release-service-utils:latest@sha256:b1b7e9ec9c856e8d36c514c5220daa2569738d53c712369c9968cd748ca6814a
+    image: quay.io/konflux-ci/release-service-utils:latest@sha256:9db0cc6b09799f41c87d46589dcd2c1ba66edfcaab3b88b99e2fcbc0646424bf
     imagePullPolicy: IfNotPresent
     script: |
       #!/usr/bin/env bash
