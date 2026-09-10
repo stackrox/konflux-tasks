@@ -315,7 +315,7 @@ spec:
           description: Floating tag to apply to the resulting images.
         steps:
         - name: get-floating-tag
-          image: registry.redhat.io/ubi9-minimal:latest@sha256:7fbeae18dc9476399f565e68255f602a3374ea8614ba3d14843565131a13ff93
+          image: registry.redhat.io/ubi9-minimal:latest@sha256:d235f607e1d6d833f031db107dc42206e4dd4d5aa9142c43d3771fb7f9bea76a
           imagePullPolicy: IfNotPresent
           env:
           - name: SOURCE_BRANCH
@@ -358,7 +358,7 @@ spec:
           description: Unique tag to apply to the resulting images.
         steps:
         - name: generate-unique-tag
-          image: registry.redhat.io/ubi9-minimal:latest@sha256:7fbeae18dc9476399f565e68255f602a3374ea8614ba3d14843565131a13ff93
+          image: registry.redhat.io/ubi9-minimal:latest@sha256:d235f607e1d6d833f031db107dc42206e4dd4d5aa9142c43d3771fb7f9bea76a
           imagePullPolicy: IfNotPresent
           script: |
             #!/usr/bin/env bash
@@ -420,7 +420,7 @@ spec:
         - name: BUNDLE_CONTENTS
         steps:
         - name: get-bundle-info
-          image: quay.io/konflux-ci/task-runner:3.1.2@sha256:e272c1e1c60a4ecc72ff9c8d65bc48da534de6f1ce0d5aba79db3ac532d11c35
+          image: quay.io/konflux-ci/task-runner:3.2.0@sha256:ba5789d2bc04146431e492083c67b86de26d5b17891dc27f67db850a397b66d3
           imagePullPolicy: IfNotPresent
           script: |
             #!/usr/bin/env bash
