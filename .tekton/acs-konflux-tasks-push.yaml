@@ -203,7 +203,7 @@ spec:
         - name: name
           value: tkn-bundle-oci-ta
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-tkn-bundle-oci-ta:0.2.5@sha256:72ee7914c1938647d80d01058b9c871a65730124d5bde116b49b02b8523027ad
+          value: quay.io/konflux-ci/tekton-catalog/task-tkn-bundle-oci-ta:0.2.5@sha256:78b7a66bf1787dc16c2d98d65ea8801a8823d8d1a85e55c54ad7bf5c642c42d1
         - name: kind
           value: task
         resolver: bundles
@@ -393,7 +393,7 @@ spec:
         - name: name
           value: rpms-signature-scan
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-rpms-signature-scan:0.2.2@sha256:4b1856e41d087e53af26562fb16a490579777d9ff05af33011ce212d477c7cd5
+          value: quay.io/konflux-ci/tekton-catalog/task-rpms-signature-scan:0.2.2@sha256:12239e624c5bca759fc594bdefd3d4411a62c69bb4c29c5ad733b1e0d88fb8e9
         - name: kind
           value: task
         resolver: bundles
