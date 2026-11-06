@@ -203,7 +203,7 @@ spec:
         - name: name
           value: tkn-bundle-oci-ta
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-tkn-bundle-oci-ta:0.2.5@sha256:af9ddff86879c9c92477fba69bca1bee88aef1e32e9f4c315d3ea6044bfd274d
+          value: quay.io/konflux-ci/tekton-catalog/task-tkn-bundle-oci-ta:0.2.5@sha256:b3cbc1d531f01abe8e40abf6e95e919dce3edd1616fc47c07fadadd7c2946a41
         - name: kind
           value: task
         resolver: bundles
@@ -243,7 +243,7 @@ spec:
         - name: name
           value: clamav-scan
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-clamav-scan:0.3.5@sha256:1d758f788dd09f11b2072085da9ba980ec2eb8aba9bdc825e661e78a86064f87
+          value: quay.io/konflux-ci/tekton-catalog/task-clamav-scan:0.3.6@sha256:0428b55c59b3d830b60ea1fcbfcd94b858b158e493fbd1a3dfb79192fff95662
         - name: kind
           value: task
         resolver: bundles
