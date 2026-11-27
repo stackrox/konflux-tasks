@@ -18,7 +18,7 @@ spec:
     description: Image digest in the format `sha256:abcdef0123`.
   steps:
   - name: wait-for-image
-    image: quay.io/konflux-ci/release-service-utils:latest@sha256:7dd8d7cf1386ceb85ee480208636836820e34cfdbef813d12bbcb920354b258e
+    image: quay.io/konflux-ci/release-service-utils:latest@sha256:9db766526d3f463a994fb6323f5f6b32f5f4ccc83fa2194d3cbd34a2a01f5e74
     imagePullPolicy: IfNotPresent
     env:
     - name: DESIRED_GIT_REF
